@@ -141,7 +141,7 @@ export function buildSeedMissingCans(): MissingCan[] {
 
 export function buildSeedSettings(): Settings {
   return {
-    companyName: 'AquaTrack Supply Co.',
+    companyName: 'Dhanam Agencies',
     companyLogo: '',
     canPrice: 40,
     depositAmount: 500,

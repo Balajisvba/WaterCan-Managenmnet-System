@@ -72,7 +72,7 @@ export class ExcelService {
       profit: [],
       settings: [
         this.storageService.getItem<Settings>('aqua-settings') || {
-          companyName: 'AquaTrack Supply Co.',
+          companyName: 'Dhanam Agencies',
           companyLogo: '',
           canPrice: 40,
           depositAmount: 500,
@@ -84,10 +84,10 @@ export class ExcelService {
     };
 
     const workbook = new Workbook();
-    workbook.creator = 'AquaTrack';
+    workbook.creator = 'Dhanam Agencies';
     workbook.created = new Date();
 
-    this.createSheet(workbook, 'Dashboard', activeData.dashboard.length ? activeData.dashboard : [{ Metrics: 'AquaTrack Management System Backup' }]);
+    this.createSheet(workbook, 'Dashboard', activeData.dashboard.length ? activeData.dashboard : [{ Metrics: 'Dhanam Agencies Management System Backup' }]);
     this.createSheet(workbook, 'Customers', activeData.customers);
     this.createSheet(workbook, 'Daily Deliveries', activeData.deliveries);
     this.createSheet(workbook, 'Expenses', activeData.expenses);
@@ -100,12 +100,12 @@ export class ExcelService {
     const blob = new Blob([buffer], {
       type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     });
-    saveAs(blob, `aquatrack-workbook-${new Date().toISOString().split('T')[0]}.xlsx`);
+    saveAs(blob, `dhanam-agencies-workbook-${new Date().toISOString().split('T')[0]}.xlsx`);
   }
 
   async exportReportSummary(report: ReportSummary): Promise<void> {
     const workbook = new Workbook();
-    workbook.creator = 'AquaTrack';
+    workbook.creator = 'Dhanam Agencies';
     workbook.created = new Date();
 
     const sheet = workbook.addWorksheet('Report Summary');
@@ -127,7 +127,7 @@ export class ExcelService {
     const blob = new Blob([buffer], {
       type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     });
-    saveAs(blob, `aquatrack-report-${new Date().toISOString().split('T')[0]}.xlsx`);
+    saveAs(blob, `dhanam-agencies-report-${new Date().toISOString().split('T')[0]}.xlsx`);
   }
 
   exportToCsv<T>(data: T[], filename: string): void {

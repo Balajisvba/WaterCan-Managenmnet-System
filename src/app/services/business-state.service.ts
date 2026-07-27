@@ -15,6 +15,20 @@ export interface CustomerLedgerStats {
   balance: number;
 }
 
+export function deriveCustomerStatus(status: string | undefined, balance: number, outstandingCan: number): Customer['status'] {
+  const normalizedStatus = (status || 'Pending').toLowerCase();
+
+  if (normalizedStatus === 'inactive') {
+    return 'Inactive';
+  }
+
+  if (normalizedStatus === 'active') {
+    return 'Active';
+  }
+
+  return balance > 0 || outstandingCan > 0 ? 'Active' : 'Pending';
+}
+
 @Injectable({ providedIn: 'root' })
 export class BusinessStateService {
   private readonly customerService = inject(CustomerService);
@@ -52,13 +66,15 @@ export class BusinessStateService {
         0
       );
 
+      const derivedStatus = deriveCustomerStatus(cust.status, balance, outstandingCan);
+
       return {
         ...cust,
         totalDelivered,
         totalReturned,
         outstandingCan,
         pendingAmount: balance,
-        status: cust.status === 'Inactive' ? 'Inactive' : balance > 0 || outstandingCan > 0 ? 'Active' : 'Pending',
+        status: derivedStatus,
       };
     });
   });

@@ -39,7 +39,7 @@ export class LoginComponent {
     const { username, password, rememberMe } = this.form.value;
     if (username === 'admin' && password === 'admin123') {
       this.storageService.setItem('aqua-login', { username, rememberMe });
-      this.notifications.success('Welcome back, AquaTrack admin');
+      this.notifications.success('Welcome back, Dhanam Agencies admin');
       this.router.navigateByUrl('/dashboard');
     } else {
       this.notifications.error('Invalid credentials');

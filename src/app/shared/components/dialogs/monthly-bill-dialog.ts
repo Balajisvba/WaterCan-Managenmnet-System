@@ -51,6 +51,11 @@ export interface MonthlyBillDialogData {
             <mat-label>Select Month</mat-label>
             <input matInput type="month" [ngModel]="selectedMonth()" (ngModelChange)="selectedMonth.set($event)" />
           </mat-form-field>
+
+          <button mat-flat-button color="primary" class="print-action-button" [disabled]="!selectedCustomer()" (click)="printBill()">
+            <mat-icon>print</mat-icon>
+            Print Bill
+          </button>
         </div>
       </div>
 
@@ -61,7 +66,7 @@ export interface MonthlyBillDialogData {
         <div class="printable-bill" id="printable-monthly-bill">
           <div class="bill-header">
             <div class="brand">
-              <h2>AquaTrack</h2>
+              <h2>Dhanam Agencies</h2>
               <p>Water Can Supply Management System</p>
               <p class="tagline">Monthly Water Can Statement & Tax Invoice</p>
             </div>
@@ -164,7 +169,7 @@ export interface MonthlyBillDialogData {
           <!-- Footer -->
           <div class="bill-footer">
             <p>Thank you for your business! Please settle your balance due at the earliest.</p>
-            <p class="small">AquaTrack Water Supply System — Computer Generated Invoice Statement</p>
+            <p class="small">Dhanam Agencies — Computer Generated Invoice Statement</p>
           </div>
         </div>
       } @else {
@@ -202,19 +207,26 @@ export interface MonthlyBillDialogData {
       display: flex;
       gap: 16px;
       flex-wrap: wrap;
+      align-items: center;
     }
     .select-field { flex: 2; min-width: 240px; }
     .date-field { flex: 1; min-width: 180px; }
+    .print-action-button {
+      min-height: 44px;
+      align-self: flex-start;
+    }
 
     .printable-bill {
       padding: 16px 0;
       color: #333;
+      line-height: 1.45;
     }
     .bill-header {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
       margin-bottom: 16px;
+      gap: 20px;
     }
     .brand h2 {
       margin: 0;
@@ -249,6 +261,7 @@ export interface MonthlyBillDialogData {
       justify-content: space-between;
       margin: 16px 0;
       gap: 24px;
+      align-items: flex-start;
     }
     .info-box h4 {
       margin: 0 0 6px;
@@ -256,6 +269,7 @@ export interface MonthlyBillDialogData {
       font-size: 0.8rem;
       text-transform: uppercase;
       letter-spacing: 0.5px;
+      font-weight: 700;
     }
     .cust-name {
       font-size: 1.15rem;
@@ -310,6 +324,7 @@ export interface MonthlyBillDialogData {
       align-items: flex-start;
       margin-top: 20px;
       gap: 20px;
+      flex-wrap: wrap;
     }
     .can-metrics {
       display: flex;
@@ -329,6 +344,7 @@ export interface MonthlyBillDialogData {
       padding: 14px 18px;
       border-radius: 10px;
       border: 1px solid #e0e0e0;
+      box-shadow: none;
     }
     .sum-row {
       display: flex;
@@ -348,7 +364,7 @@ export interface MonthlyBillDialogData {
     }
 
     .bill-footer {
-      text-align: center;
+      text-align: left;
       margin-top: 28px;
       padding-top: 14px;
       border-top: 1px dashed #ccc;
