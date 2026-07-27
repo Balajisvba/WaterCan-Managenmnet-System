@@ -37,3 +37,222 @@ The complete Knowledge Transfer (KT) document for the **AquaTrack Water Can Supp
 ---
 
 For the full detailed manual with diagrams and step-by-step screenshots, see [knowledge_transfer_document.md](file:///C:/Users/Manoj/.gemini/antigravity/brain/83d7ea22-86b3-4104-bec3-e8980a715a8d/knowledge_transfer_document.md).
+
+
+
+
+
+PLans
+
+mplementation Plan - Customer Balance Due & Monthly Bill Printing Feature
+1. Goal Description
+Enhance the AquaTrack application with:
+
+Customer Balance Calculation Refinement: Ensure customer pending balance strictly reflects the total accumulated Balance Due from all deliveries for that customer (accounting for any direct payments or missing can charges).
+Deliveries Page Calendar Filter & Invoice Print: Add calendar date filter (with quick presets + date pickers) on the Deliveries page and streamline individual delivery receipt printing.
+Monthly Customer Bill Generator & Print Feature: Add a dedicated Print Monthly Bill feature allowing operators to select a customer and billing month/date range, calculate month-wise totals (Filled delivered, Empty returned, Total invoiced, Amount paid, Month balance due, Net outstanding balance), and print a formatted monthly customer bill statement.
+2. Proposed Changes
+Core State & Calculations
+[MODIFY] 
+business-state.service.ts
+Update customers computed signal to calculate pendingAmount explicitly as the sum of delivery.balance (Balance Due) across all deliveries for each customer plus missing can loss amounts minus direct payments.
+Monthly Bill Printing Feature
+[NEW] 
+monthly-bill-dialog.ts
+Create standalone MonthlyBillDialogComponent:
+Inputs: Customer selection dropdown, Month/Year selector (or date range selector).
+Calculations:
+Deliveries in selected month.
+Total Filled Cans Delivered in month.
+Total Empty Cans Returned in month.
+Total Invoiced Amount for the month.
+Total Paid Amount for the month.
+Month Balance Due (∑Delivery Balance).
+Total Accumulated Pending Balance Due.
+Printable Layout: Clean invoice statement styled for print (@media print) with company header, itemized monthly delivery ledger, totals summary, and Print Bill button (window.print()).
+Deliveries Page Enhancements
+[MODIFY] 
+deliveries.ts
+Add date range filter signals (datePreset, startDate, endDate) for calendar date selection.
+Add openMonthlyBillDialog() method to trigger the Monthly Bill printing dialog.
+[MODIFY] 
+deliveries.html
+Integrate Calendar Date Filter Toolbar with quick presets (Today, This Week, This Month, All Time) and custom date pickers.
+Add Print Monthly Bill button in the header actions bar.
+Maintain print invoice button on every delivery row in the table.
+[MODIFY] 
+deliveries.css
+Add styling for calendar filter toolbar and header action buttons.
+Verification Plan
+Automated Verification
+Run npm run build to verify clean TypeScript compilation and Angular template checking.
+Run npm test to verify unit test execution.
+Manual Verification
+Navigate to Deliveries:
+Test calendar date filter (Presets: Today, This Week, This Month, Custom Date Range).
+Verify table filters deliveries according to selected dates.
+Click the print icon on any delivery row to verify individual receipt invoice printing.
+Click Print Monthly Bill:
+Select a Customer and Month.
+Verify month-wise calculation (Total filled cans, empty cans, invoiced total, paid total, and balance due).
+Click Print Bill to open print preview.
+
+
+Walkthrough - Dashboard Calendar Filter & Customer Pending Amount Features
+We have implemented and verified the requested features in AquaTrack Water Can Management System.
+
+Key Changes Made
+1. Customer Directory: Customer Pending Amount Column & Balance Calculation
+Model Update: Added pendingAmount?: number to Customer interface in 
+app.models.ts
+.
+State Signal Calculation: Updated BusinessStateService.customers in 
+business-state.service.ts
+ to compute each customer's outstanding balance: Pending Amount=max(0,Total Invoiced Deliveries+Missing Can Losses−Total Payments) and attach pendingAmount: balance to every customer.
+UI Table Column: Added { key: 'pendingAmount', label: 'Pending Amount', type: 'currency' } to 
+customers.ts
+.
+Toolbar Badging & CSV Export: Added a Total Pending: ₹... badge in 
+customers.html
+ and ensured CSV export includes pending amounts.
+2. Operations Dashboard: Calendar Date & Date Range Filter
+Date Adapter Configuration: Provided provideNativeDateAdapter() in 
+app.config.ts
+.
+Reactive Filter Signals: Added datePreset, startDate, and endDate signals in 
+dashboard.ts
+ with quick filter presets:
+All Time: Resets filters to show all-time data.
+Today: Filters data for today's date.
+This Week: Filters data for the past 7 days.
+This Month: Filters data starting from 1st of the current month.
+Custom Range: Custom From Date and To Date pickers.
+Computed Dashboard Summary: Updated DashboardComponent.summary signal to dynamically recalculate Revenue, Deliveries count, Expenses, Net Profit, Range Missing Cans, and Filtered Deliveries table based on the selected date range.
+Responsive Toolbar UI: Added styled filter bar in 
+dashboard.html
+ and 
+dashboard.css
+.
+Verification Results
+Automated Build & Unit Tests
+Production Build: Executed npm run build — compiled cleanly with 0 errors.
+Unit Test Suite: Executed npm test — all test suites passed cleanly (6/6 tests passed).
+text
+
+✓ WaterCanManagenmentSystem  src/app/services/business-state.service.spec.ts (2 tests)
+✓ WaterCanManagenmentSystem  src/app/spec.ts (4 tests)
+Test Files  2 passed (2)
+     Tests  6 passed (6)
+
+
+
+
+
+     Implementation Plan - Customer Balance Due & Monthly Bill Printing Feature
+1. Goal Description
+Enhance the AquaTrack application with:
+
+Customer Balance Calculation Refinement: Ensure customer pending balance strictly reflects the total accumulated Balance Due from all deliveries for that customer (accounting for any direct payments or missing can charges).
+Deliveries Page Calendar Filter & Invoice Print: Add calendar date filter (with quick presets + date pickers) on the Deliveries page and streamline individual delivery receipt printing.
+Monthly Customer Bill Generator & Print Feature: Add a dedicated Print Monthly Bill feature allowing operators to select a customer and billing month/date range, calculate month-wise totals (Filled delivered, Empty returned, Total invoiced, Amount paid, Month balance due, Net outstanding balance), and print a formatted monthly customer bill statement.
+2. Proposed Changes
+Core State & Calculations
+[MODIFY] 
+business-state.service.ts
+Update customers computed signal to calculate pendingAmount explicitly as the sum of delivery.balance (Balance Due) across all deliveries for each customer plus missing can loss amounts minus direct payments.
+Monthly Bill Printing Feature
+[NEW] 
+monthly-bill-dialog.ts
+Create standalone MonthlyBillDialogComponent:
+Inputs: Customer selection dropdown, Month/Year selector (or date range selector).
+Calculations:
+Deliveries in selected month.
+Total Filled Cans Delivered in month.
+Total Empty Cans Returned in month.
+Total Invoiced Amount for the month.
+Total Paid Amount for the month.
+Month Balance Due (∑Delivery Balance).
+Total Accumulated Pending Balance Due.
+Printable Layout: Clean invoice statement styled for print (@media print) with company header, itemized monthly delivery ledger, totals summary, and Print Bill button (window.print()).
+Deliveries Page Enhancements
+[MODIFY] 
+deliveries.ts
+Add date range filter signals (datePreset, startDate, endDate) for calendar date selection.
+Add openMonthlyBillDialog() method to trigger the Monthly Bill printing dialog.
+[MODIFY] 
+deliveries.html
+Integrate Calendar Date Filter Toolbar with quick presets (Today, This Week, This Month, All Time) and custom date pickers.
+Add Print Monthly Bill button in the header actions bar.
+Maintain print invoice button on every delivery row in the table.
+[MODIFY] 
+deliveries.css
+Add styling for calendar filter toolbar and header action buttons.
+Verification Plan
+Automated Verification
+Run npm run build to verify clean TypeScript compilation and Angular template checking.
+Run npm test to verify unit test execution.
+Manual Verification
+Navigate to Deliveries:
+Test calendar date filter (Presets: Today, This Week, This Month, Custom Date Range).
+Verify table filters deliveries according to selected dates.
+Click the print icon on any delivery row to verify individual receipt invoice printing.
+Click Print Monthly Bill:
+Select a Customer and Month.
+Verify month-wise calculation (Total filled cans, empty cans, invoiced total, paid total, and balance due).
+Click Print Bill to open print preview.
+
+
+
+
+Implementation Plan - Customer Balance Due & Monthly Bill Printing Feature
+1. Goal Description
+Enhance the AquaTrack application with:
+
+Customer Balance Calculation Refinement: Ensure customer pending balance strictly reflects the total accumulated Balance Due from all deliveries for that customer (accounting for any direct payments or missing can charges).
+Deliveries Page Calendar Filter & Invoice Print: Add calendar date filter (with quick presets + date pickers) on the Deliveries page and streamline individual delivery receipt printing.
+Monthly Customer Bill Generator & Print Feature: Add a dedicated Print Monthly Bill feature allowing operators to select a customer and billing month/date range, calculate month-wise totals (Filled delivered, Empty returned, Total invoiced, Amount paid, Month balance due, Net outstanding balance), and print a formatted monthly customer bill statement.
+2. Proposed Changes
+Core State & Calculations
+[MODIFY] 
+business-state.service.ts
+Update customers computed signal to calculate pendingAmount explicitly as the sum of delivery.balance (Balance Due) across all deliveries for each customer plus missing can loss amounts minus direct payments.
+Monthly Bill Printing Feature
+[NEW] 
+monthly-bill-dialog.ts
+Create standalone MonthlyBillDialogComponent:
+Inputs: Customer selection dropdown, Month/Year selector (or date range selector).
+Calculations:
+Deliveries in selected month.
+Total Filled Cans Delivered in month.
+Total Empty Cans Returned in month.
+Total Invoiced Amount for the month.
+Total Paid Amount for the month.
+Month Balance Due (∑Delivery Balance).
+Total Accumulated Pending Balance Due.
+Printable Layout: Clean invoice statement styled for print (@media print) with company header, itemized monthly delivery ledger, totals summary, and Print Bill button (window.print()).
+Deliveries Page Enhancements
+[MODIFY] 
+deliveries.ts
+Add date range filter signals (datePreset, startDate, endDate) for calendar date selection.
+Add openMonthlyBillDialog() method to trigger the Monthly Bill printing dialog.
+[MODIFY] 
+deliveries.html
+Integrate Calendar Date Filter Toolbar with quick presets (Today, This Week, This Month, All Time) and custom date pickers.
+Add Print Monthly Bill button in the header actions bar.
+Maintain print invoice button on every delivery row in the table.
+[MODIFY] 
+deliveries.css
+Add styling for calendar filter toolbar and header action buttons.
+Verification Plan
+Automated Verification
+Run npm run build to verify clean TypeScript compilation and Angular template checking.
+Run npm test to verify unit test execution.
+Manual Verification
+Navigate to Deliveries:
+Test calendar date filter (Presets: Today, This Week, This Month, Custom Date Range).
+Verify table filters deliveries according to selected dates.
+Click the print icon on any delivery row to verify individual receipt invoice printing.
+Click Print Monthly Bill:
+Select a Customer and Month.
+Verify month-wise calculation (Total filled cans, empty cans, invoiced total, paid total, and balance due).
+Click Print Bill to open print preview.

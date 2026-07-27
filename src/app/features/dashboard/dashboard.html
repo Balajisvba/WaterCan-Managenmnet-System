@@ -27,38 +27,90 @@
     </div>
   </div>
 
+  <!-- Single Date Calendar Filter Toolbar -->
+  <div class="filter-toolbar">
+    <div class="filter-label">
+      <mat-icon color="primary">event</mat-icon>
+      <span class="filter-title">Filter Reports by Date:</span>
+    </div>
+
+    <div class="preset-buttons">
+      <button
+        mat-flat-button
+        [color]="datePreset() === 'all' ? 'primary' : ''"
+        [class.unselected-preset]="datePreset() !== 'all'"
+        (click)="setPreset('all')"
+      >
+        All Time
+      </button>
+      <button
+        mat-flat-button
+        [color]="datePreset() === 'today' ? 'primary' : ''"
+        [class.unselected-preset]="datePreset() !== 'today'"
+        (click)="setPreset('today')"
+      >
+        Today
+      </button>
+    </div>
+
+    <div class="custom-date-inputs">
+      <div class="date-input-group">
+        <label for="singleDateInput">Select Date:</label>
+        <input
+          id="singleDateInput"
+          type="date"
+          class="custom-date-picker"
+          [value]="selectedDate()"
+          (change)="onDateSelect($any($event.target).value)"
+        />
+      </div>
+
+      @if (selectedDate()) {
+        <button mat-stroked-button color="warn" (click)="clearDateFilter()" title="Clear Filter">
+          <mat-icon>filter_alt_off</mat-icon> Reset Date
+        </button>
+      }
+    </div>
+
+    @if (selectedDate()) {
+      <div class="filter-active-badge">
+        Showing Reports for: <strong>{{ summary().dateLabel }}</strong>
+      </div>
+    }
+  </div>
+
   <!-- 8 KPI Summary Cards -->
   <div class="kpi-grid">
     <app-card
-      title="Today's Revenue"
+      [title]="selectedDate() ? 'Selected Revenue' : 'Today\'s Revenue'"
       [value]="'₹' + (summary().todayRevenue | number)"
       icon="payments"
       colorClass="primary"
-      subtitle="Today's Total Deliveries Invoiced"
+      [subtitle]="summary().revenueSubtitle"
     ></app-card>
 
     <app-card
-      title="Today's Deliveries"
+      [title]="selectedDate() ? 'Selected Deliveries' : 'Today\'s Deliveries'"
       [value]="summary().todayDeliveries"
       icon="local_shipping"
       colorClass="success"
-      subtitle="Completed Orders Today"
+      [subtitle]="summary().deliveriesSubtitle"
     ></app-card>
 
     <app-card
-      title="Today's Expenses"
+      [title]="selectedDate() ? 'Selected Expenses' : 'Today\'s Expenses'"
       [value]="'₹' + (summary().todayExpenses | number)"
       icon="receipt_long"
       colorClass="warning"
-      subtitle="Daily Operational Cost"
+      [subtitle]="summary().expensesSubtitle"
     ></app-card>
 
     <app-card
-      title="Today's Profit"
+      [title]="selectedDate() ? 'Selected Net Profit' : 'Today\'s Profit'"
       [value]="'₹' + (summary().todayProfit | number)"
       icon="trending_up"
       [colorClass]="summary().todayProfit >= 0 ? 'success' : 'danger'"
-      subtitle="Net Margin Today"
+      [subtitle]="summary().profitSubtitle"
     ></app-card>
 
     <app-card
@@ -70,11 +122,11 @@
     ></app-card>
 
     <app-card
-      title="Missing Cans"
+      [title]="selectedDate() ? 'Date Missing Cans' : 'Missing Cans'"
       [value]="summary().missingCans"
       icon="warning"
       colorClass="danger"
-      subtitle="Unreturned / Lost Cans"
+      [subtitle]="selectedDate() ? 'Loss entries on selected date' : 'Unreturned / Lost Cans'"
     ></app-card>
 
     <app-card
@@ -86,11 +138,11 @@
     ></app-card>
 
     <app-card
-      title="Monthly Revenue"
+      [title]="selectedDate() ? 'Selected Sales' : 'Monthly Revenue'"
       [value]="'₹' + (summary().monthlyRevenue | number)"
       icon="account_balance_wallet"
       colorClass="success"
-      subtitle="Current Month Total Sales"
+      [subtitle]="summary().salesSubtitle"
     ></app-card>
   </div>
 
@@ -125,10 +177,10 @@
     ></app-chart>
   </div>
 
-  <!-- Recent Deliveries Table -->
+  <!-- Deliveries Table -->
   <div class="recent-section">
     <div class="section-header">
-      <h3>Recent Deliveries</h3>
+      <h3>{{ summary().deliveriesTitle }}</h3>
       <a mat-button color="primary" routerLink="/deliveries">View All Deliveries &rarr;</a>
     </div>
 

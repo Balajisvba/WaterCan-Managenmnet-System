@@ -9,6 +9,7 @@ export interface Customer {
   outstandingCan: number;
   totalDelivered: number;
   totalReturned: number;
+  pendingAmount?: number;
   status: 'Active' | 'Inactive' | 'Pending';
   createdAt: string;
   updatedAt: string;

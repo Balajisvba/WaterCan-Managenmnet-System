@@ -2,11 +2,14 @@
   <div class="page-header">
     <div>
       <h2>Water Can Deliveries</h2>
-      <p>Log daily filled cans supplied, empty cans collected, payments, and print customer invoices.</p>
+      <p>Log daily filled cans supplied, empty cans collected, track balance due, and print customer monthly bills.</p>
     </div>
     <div class="header-actions">
       <button mat-flat-button color="primary" (click)="openAddDialog()">
         <mat-icon>local_shipping</mat-icon> Log New Delivery
+      </button>
+      <button mat-flat-button color="accent" (click)="openMonthlyBillDialog()">
+        <mat-icon>print</mat-icon> Print Monthly Bill
       </button>
       <button mat-stroked-button (click)="exportExcel()">
         <mat-icon>download</mat-icon> Export CSV
@@ -14,28 +17,84 @@
     </div>
   </div>
 
-  <div class="toolbar-section">
-    <div class="filters">
-      <app-search-box
-        placeholder="Search by customer, driver, remarks, ID..."
-        (searchChange)="searchTerm.set($event)"
-      ></app-search-box>
-
-      <mat-form-field appearance="outline" class="date-filter">
-        <mat-label>Filter by Date</mat-label>
-        <input
-          matInput
-          type="date"
-          [ngModel]="dateFilter()"
-          (ngModelChange)="dateFilter.set($event)"
-        />
-        @if (dateFilter()) {
-          <button matSuffix mat-icon-button aria-label="Clear date" (click)="dateFilter.set('')">
-            <mat-icon>close</mat-icon>
-          </button>
-        }
-      </mat-form-field>
+  <!-- Calendar Date Filter Toolbar -->
+  <div class="filter-toolbar">
+    <div class="filter-label">
+      <mat-icon color="primary">calendar_month</mat-icon>
+      <span class="filter-title">Date Filter:</span>
     </div>
+
+    <div class="preset-buttons">
+      <button
+        mat-flat-button
+        [color]="datePreset() === 'all' ? 'primary' : ''"
+        [class.unselected-preset]="datePreset() !== 'all'"
+        (click)="setPreset('all')"
+      >
+        All Time
+      </button>
+      <button
+        mat-flat-button
+        [color]="datePreset() === 'today' ? 'primary' : ''"
+        [class.unselected-preset]="datePreset() !== 'today'"
+        (click)="setPreset('today')"
+      >
+        Today
+      </button>
+      <button
+        mat-flat-button
+        [color]="datePreset() === 'week' ? 'primary' : ''"
+        [class.unselected-preset]="datePreset() !== 'week'"
+        (click)="setPreset('week')"
+      >
+        This Week
+      </button>
+      <button
+        mat-flat-button
+        [color]="datePreset() === 'month' ? 'primary' : ''"
+        [class.unselected-preset]="datePreset() !== 'month'"
+        (click)="setPreset('month')"
+      >
+        This Month
+      </button>
+    </div>
+
+    <div class="custom-date-inputs">
+      <div class="date-input-group">
+        <label for="delivStartDateInput">From:</label>
+        <input
+          id="delivStartDateInput"
+          type="date"
+          class="custom-date-picker"
+          [value]="startDate()"
+          (change)="onCustomDateChange($any($event.target).value, endDate())"
+        />
+      </div>
+
+      <div class="date-input-group">
+        <label for="delivEndDateInput">To:</label>
+        <input
+          id="delivEndDateInput"
+          type="date"
+          class="custom-date-picker"
+          [value]="endDate()"
+          (change)="onCustomDateChange(startDate(), $any($event.target).value)"
+        />
+      </div>
+
+      @if (isFiltered()) {
+        <button mat-stroked-button color="warn" (click)="clearDateFilter()" title="Clear Filter">
+          <mat-icon>filter_alt_off</mat-icon> Reset
+        </button>
+      }
+    </div>
+  </div>
+
+  <div class="toolbar-section">
+    <app-search-box
+      placeholder="Search by customer, driver, remarks, ID..."
+      (searchChange)="searchTerm.set($event)"
+    ></app-search-box>
 
     <div class="count-badge">Total Deliveries: {{ filteredDeliveries().length }}</div>
   </div>
