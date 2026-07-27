@@ -1,5 +1,6 @@
 .shell-container {
   height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
 }
@@ -125,6 +126,12 @@
   box-shadow: var(--shadow-md) !important;
 }
 
+.toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .toolbar-brand {
   display: flex;
   align-items: center;
@@ -171,10 +178,83 @@
 }
 
 @media (max-width: 768px) {
+  .shell-container {
+    height: 100dvh;
+  }
+
+  .app-sidenav {
+    width: min(85vw, 280px);
+  }
+
   .page-content {
     padding: 12px;
+    min-height: auto;
   }
+
+  .top-toolbar {
+    padding: 0 8px;
+  }
+
+  .toolbar-brand {
+    margin-left: 4px;
+    max-width: 55vw;
+  }
+
   .toolbar-title {
     font-size: 0.95rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .toolbar-btn span {
+    display: none;
+  }
+
+  .toolbar-btn {
+    min-width: 40px;
+    padding: 0 8px;
+    margin-right: 4px;
+  }
+
+  .app-footer {
+    padding: 12px;
+    font-size: 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .toolbar-brand {
+    display: none;
+  }
+
+  .toolbar-actions {
+    margin-left: auto;
+  }
+
+  .app-sidenav {
+    width: 88vw;
+    padding: 10px 8px;
+  }
+
+  .page-content {
+    padding: 10px;
+  }
+
+  .brand {
+    padding: 10px 10px 16px;
+  }
+
+  .brand-logo-img {
+    width: 38px;
+    height: 38px;
+  }
+
+  .brand-title h3 {
+    font-size: 1rem;
+  }
+
+  .brand-title p {
+    font-size: 0.7rem;
   }
 }
