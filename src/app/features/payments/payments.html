@@ -1,0 +1,41 @@
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <h2>Customer Payments & Ledger</h2>
+      <p>Record customer cash/UPI payments and monitor ledger outstanding balances.</p>
+    </div>
+    <div class="header-actions">
+      <button mat-flat-button color="primary" (click)="openAddDialog()">
+        <mat-icon>payments</mat-icon> Record Payment
+      </button>
+      <button mat-stroked-button (click)="exportExcel()">
+        <mat-icon>download</mat-icon> Export CSV
+      </button>
+    </div>
+  </div>
+
+  <div class="stats-row">
+    <app-card
+      title="Total Payments Collected"
+      [value]="'₹' + (totalPaymentsCollected() | number)"
+      icon="account_balance"
+      colorClass="success"
+      subtitle="Cumulative Direct & Advance Payments"
+    ></app-card>
+  </div>
+
+  <div class="toolbar-section">
+    <app-search-box
+      placeholder="Search by customer, remarks, ID..."
+      (searchChange)="searchTerm.set($event)"
+    ></app-search-box>
+    <div class="count-badge">Total Payments: {{ filteredPayments().length }}</div>
+  </div>
+
+  <app-data-table
+    [data]="filteredPayments()"
+    [columns]="columns"
+    (editRow)="openEditDialog($event)"
+    (deleteRow)="confirmDelete($event)"
+  ></app-data-table>
+</div>

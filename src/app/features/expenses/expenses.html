@@ -1,0 +1,49 @@
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <h2>Operational Expenses</h2>
+      <p>Track business expenses across Fuel, Salaries, Vehicle Maintenance, Utilities, and Miscellaneous.</p>
+    </div>
+    <div class="header-actions">
+      <button mat-flat-button color="primary" (click)="openAddDialog()">
+        <mat-icon>receipt</mat-icon> Record Expense
+      </button>
+      <button mat-stroked-button (click)="exportExcel()">
+        <mat-icon>download</mat-icon> Export CSV
+      </button>
+    </div>
+  </div>
+
+  <div class="stats-row">
+    <app-card
+      title="Today's Expenses"
+      [value]="'₹' + (todayTotal() | number)"
+      icon="today"
+      colorClass="warning"
+      subtitle="Total Spent Today"
+    ></app-card>
+
+    <app-card
+      title="Monthly Expenses"
+      [value]="'₹' + (monthlyTotal() | number)"
+      icon="calendar_month"
+      colorClass="danger"
+      subtitle="Current Month Expenses"
+    ></app-card>
+  </div>
+
+  <div class="toolbar-section">
+    <app-search-box
+      placeholder="Search by category, remarks, ID..."
+      (searchChange)="searchTerm.set($event)"
+    ></app-search-box>
+    <div class="count-badge">Total Expenses: {{ filteredExpenses().length }}</div>
+  </div>
+
+  <app-data-table
+    [data]="filteredExpenses()"
+    [columns]="columns"
+    (editRow)="openEditDialog($event)"
+    (deleteRow)="confirmDelete($event)"
+  ></app-data-table>
+</div>

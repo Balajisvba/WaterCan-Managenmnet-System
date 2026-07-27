@@ -1,0 +1,59 @@
+.page-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.page-header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #7b1fa2;
+}
+
+.page-header p {
+  margin: 4px 0 0;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.header-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.report-tabs-card {
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+}
+
+.tab-content {
+  padding: 20px 0;
+}
+
+.tab-content h3 {
+  margin: 0 0 16px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #333;
+}
+
+@media print {
+  .no-print { display: none !important; }
+  .page-container { padding: 0; }
+}

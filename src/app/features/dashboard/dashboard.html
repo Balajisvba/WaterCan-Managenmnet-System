@@ -1,0 +1,144 @@
+<div class="dashboard-container">
+  <!-- Hero banner -->
+  <div class="hero-card">
+    <div class="hero-text">
+      <h2>AquaTrack Operations Center</h2>
+      <p>Real-time analytics for revenue, delivery logs, expenses, customer ledgers, and can inventory.</p>
+    </div>
+    <div class="hero-actions">
+      <button mat-flat-button color="primary" (click)="openNewDelivery()">
+        <mat-icon>local_shipping</mat-icon> Log Delivery
+      </button>
+      <button mat-flat-button color="accent" (click)="openNewCustomer()">
+        <mat-icon>person_add</mat-icon> Add Customer
+      </button>
+      <button mat-stroked-button (click)="openNewPayment()">
+        <mat-icon>payments</mat-icon> Record Payment
+      </button>
+      <button mat-stroked-button (click)="openNewExpense()">
+        <mat-icon>receipt</mat-icon> Add Expense
+      </button>
+      <button mat-stroked-button (click)="openNewMissingCan()">
+        <mat-icon>inventory_2</mat-icon> Missing Can
+      </button>
+      <button mat-stroked-button (click)="exportExcel()">
+        <mat-icon>download</mat-icon> Export Excel
+      </button>
+    </div>
+  </div>
+
+  <!-- 8 KPI Summary Cards -->
+  <div class="kpi-grid">
+    <app-card
+      title="Today's Revenue"
+      [value]="'₹' + (summary().todayRevenue | number)"
+      icon="payments"
+      colorClass="primary"
+      subtitle="Today's Total Deliveries Invoiced"
+    ></app-card>
+
+    <app-card
+      title="Today's Deliveries"
+      [value]="summary().todayDeliveries"
+      icon="local_shipping"
+      colorClass="success"
+      subtitle="Completed Orders Today"
+    ></app-card>
+
+    <app-card
+      title="Today's Expenses"
+      [value]="'₹' + (summary().todayExpenses | number)"
+      icon="receipt_long"
+      colorClass="warning"
+      subtitle="Daily Operational Cost"
+    ></app-card>
+
+    <app-card
+      title="Today's Profit"
+      [value]="'₹' + (summary().todayProfit | number)"
+      icon="trending_up"
+      [colorClass]="summary().todayProfit >= 0 ? 'success' : 'danger'"
+      subtitle="Net Margin Today"
+    ></app-card>
+
+    <app-card
+      title="Outstanding Cans"
+      [value]="summary().outstandingCans"
+      icon="invert_colors"
+      colorClass="purple"
+      subtitle="Cans Held by Customers"
+    ></app-card>
+
+    <app-card
+      title="Missing Cans"
+      [value]="summary().missingCans"
+      icon="warning"
+      colorClass="danger"
+      subtitle="Unreturned / Lost Cans"
+    ></app-card>
+
+    <app-card
+      title="Active Customers"
+      [value]="summary().activeCustomers"
+      icon="groups"
+      colorClass="primary"
+      subtitle="Registered Active Accounts"
+    ></app-card>
+
+    <app-card
+      title="Monthly Revenue"
+      [value]="'₹' + (summary().monthlyRevenue | number)"
+      icon="account_balance_wallet"
+      colorClass="success"
+      subtitle="Current Month Total Sales"
+    ></app-card>
+  </div>
+
+  <!-- 4 Trend Charts -->
+  <div class="charts-grid">
+    <app-chart
+      title="Revenue Trend (6 Months)"
+      subtitle="Monthly Gross Delivery Revenue"
+      [data]="summary().revenueTrend"
+      colorScheme="primary"
+    ></app-chart>
+
+    <app-chart
+      title="Expense Trend (6 Months)"
+      subtitle="Monthly Operational Expenses"
+      [data]="summary().expenseTrend"
+      colorScheme="warning"
+    ></app-chart>
+
+    <app-chart
+      title="Net Profit Trend"
+      subtitle="Monthly Net Profit Margins"
+      [data]="summary().profitTrend"
+      colorScheme="success"
+    ></app-chart>
+
+    <app-chart
+      title="Missing Cans Trend"
+      subtitle="Monthly Inventory Can Losses"
+      [data]="summary().missingTrend"
+      colorScheme="danger"
+    ></app-chart>
+  </div>
+
+  <!-- Recent Deliveries Table -->
+  <div class="recent-section">
+    <div class="section-header">
+      <h3>Recent Deliveries</h3>
+      <a mat-button color="primary" routerLink="/deliveries">View All Deliveries &rarr;</a>
+    </div>
+
+    <app-data-table
+      [data]="summary().recentDeliveries"
+      [columns]="recentColumns"
+      [showEdit]="false"
+      [showDelete]="false"
+      [showPrint]="true"
+      (printRow)="printInvoice($event)"
+    ></app-data-table>
+  </div>
+</div>

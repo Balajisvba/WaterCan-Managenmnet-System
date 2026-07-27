@@ -1,0 +1,63 @@
+<mat-sidenav-container class="shell-container">
+  <mat-sidenav #drawer [opened]="sidenavOpen()" mode="side" class="app-sidenav">
+    <div class="brand">
+      <img src="/aqua-logo.png" alt="AquaTrack Logo" class="brand-logo-img" />
+      <div class="brand-title">
+        <h3>AquaTrack</h3>
+        <p>Water Supply System</p>
+      </div>
+    </div>
+
+    <mat-nav-list class="nav-list">
+      @for (item of navigation; track item.route) {
+        <a mat-list-item [routerLink]="item.route" routerLinkActive="active-link" class="nav-item">
+          <mat-icon matListItemIcon class="nav-icon">{{ item.icon }}</mat-icon>
+          <span matListItemTitle class="nav-text">{{ item.label }}</span>
+        </a>
+      }
+    </mat-nav-list>
+
+    <div class="sidenav-footer">
+      <div class="badge-status">
+        <span class="status-dot"></span> Offline Enterprise Active
+      </div>
+      <p>AquaTrack v2.0</p>
+    </div>
+  </mat-sidenav>
+
+  <mat-sidenav-content>
+    <mat-toolbar color="primary" class="top-toolbar">
+      <button mat-icon-button (click)="sidenavOpen.set(!sidenavOpen())">
+        <mat-icon>menu</mat-icon>
+      </button>
+      
+      <div class="toolbar-brand">
+        <img src="/aqua-logo.png" alt="Logo" class="header-logo-mini" />
+        <span class="toolbar-title">AquaTrack Enterprise Operations</span>
+      </div>
+
+      <span class="toolbar-spacer"></span>
+
+      <button mat-button (click)="quickBackupExcel()" class="toolbar-btn">
+        <mat-icon>file_download</mat-icon>
+        <span>Export Excel</span>
+      </button>
+
+      <button mat-icon-button (click)="toggleTheme()" matTooltip="Toggle Dark/Light Mode">
+        <mat-icon>{{ isDarkMode() ? 'light_mode' : 'dark_mode' }}</mat-icon>
+      </button>
+
+      <button mat-icon-button (click)="logout()" matTooltip="Logout">
+        <mat-icon>logout</mat-icon>
+      </button>
+    </mat-toolbar>
+
+    <main class="page-content">
+      <router-outlet></router-outlet>
+    </main>
+
+    <footer class="app-footer">
+      <p>&copy; 2026 AquaTrack Water Can Supply Management System. Powered by Angular 20 & ExcelJS Engine.</p>
+    </footer>
+  </mat-sidenav-content>
+</mat-sidenav-container>

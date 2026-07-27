@@ -1,0 +1,127 @@
+<div class="page-container" id="printable-report">
+  <div class="page-header no-print">
+    <div>
+      <h2>Enterprise Business Reports</h2>
+      <p>Comprehensive daily, weekly, monthly, and annual financial and inventory analytics.</p>
+    </div>
+    <div class="header-actions">
+      <button mat-flat-button color="primary" (click)="exportExcelReport()">
+        <mat-icon>file_download</mat-icon> Export Excel Report
+      </button>
+      <button mat-stroked-button (click)="exportCustomersCsv()">
+        <mat-icon>download</mat-icon> Export CSV
+      </button>
+      <button mat-stroked-button (click)="printReport()">
+        <mat-icon>print</mat-icon> Print Report
+      </button>
+    </div>
+  </div>
+
+  <!-- Report KPI Cards -->
+  <div class="kpi-grid">
+    <app-card
+      title="Daily Revenue"
+      [value]="'₹' + (summary().dailyRevenue | number)"
+      icon="today"
+      colorClass="primary"
+      subtitle="Today Total Invoiced"
+    ></app-card>
+
+    <app-card
+      title="Weekly Revenue"
+      [value]="'₹' + (summary().weeklyRevenue | number)"
+      icon="date_range"
+      colorClass="success"
+      subtitle="Past 7 Days Revenue"
+    ></app-card>
+
+    <app-card
+      title="Monthly Revenue"
+      [value]="'₹' + (summary().monthlyRevenue | number)"
+      icon="calendar_month"
+      colorClass="primary"
+      subtitle="Current Month Revenue"
+    ></app-card>
+
+    <app-card
+      title="Yearly Revenue"
+      [value]="'₹' + (summary().yearlyRevenue | number)"
+      icon="account_balance_wallet"
+      colorClass="purple"
+      subtitle="Current Year Total Sales"
+    ></app-card>
+
+    <app-card
+      title="Total Expenses"
+      [value]="'₹' + (summary().expenses | number)"
+      icon="receipt_long"
+      colorClass="warning"
+      subtitle="Total Operating Expenses"
+    ></app-card>
+
+    <app-card
+      title="Net Profit"
+      [value]="'₹' + (summary().profit | number)"
+      icon="trending_up"
+      [colorClass]="summary().profit >= 0 ? 'success' : 'danger'"
+      subtitle="Revenue Minus Expenses"
+    ></app-card>
+
+    <app-card
+      title="Customer Outstanding"
+      [value]="'₹' + (summary().customerOutstanding | number)"
+      icon="account_balance"
+      colorClass="warning"
+      subtitle="Total Unpaid Balances"
+    ></app-card>
+
+    <app-card
+      title="Missing Can Losses"
+      [value]="'₹' + (summary().missingCanLoss | number)"
+      icon="warning"
+      colorClass="danger"
+      subtitle="Lost Inventory Replacement Cost"
+    ></app-card>
+  </div>
+
+  <!-- Detailed Tabbed Reports -->
+  <mat-card class="report-tabs-card">
+    <mat-tab-group animationDuration="200ms">
+      <mat-tab label="Customer Outstanding Ledger">
+        <div class="tab-content">
+          <h3>Customer Ledger & Outstanding Can Breakdown</h3>
+          <app-data-table
+            [data]="customers()"
+            [columns]="customerColumns"
+            [showEdit]="false"
+            [showDelete]="false"
+          ></app-data-table>
+        </div>
+      </mat-tab>
+
+      <mat-tab label="Expenses Breakdown">
+        <div class="tab-content">
+          <h3>Expense Log Analysis</h3>
+          <app-data-table
+            [data]="expenses()"
+            [columns]="expenseColumns"
+            [showEdit]="false"
+            [showDelete]="false"
+          ></app-data-table>
+        </div>
+      </mat-tab>
+
+      <mat-tab label="Missing Can Losses">
+        <div class="tab-content">
+          <h3>Missing Can Inventory & Replacement Losses</h3>
+          <app-data-table
+            [data]="missingCans()"
+            [columns]="missingColumns"
+            [showEdit]="false"
+            [showDelete]="false"
+          ></app-data-table>
+        </div>
+      </mat-tab>
+    </mat-tab-group>
+  </mat-card>
+</div>

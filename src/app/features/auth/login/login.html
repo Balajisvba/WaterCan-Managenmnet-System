@@ -1,0 +1,65 @@
+<div class="login-wrapper">
+  <!-- Left visual hero panel -->
+  <div class="login-hero-panel">
+    <div class="hero-overlay">
+      <div class="hero-brand">
+        <img src="/aqua-logo.png" alt="AquaTrack Logo" class="hero-logo" />
+        <h2>AquaTrack Enterprise</h2>
+      </div>
+      <div class="hero-caption">
+        <h3>Smart Water Can Logistics & Supply Chain</h3>
+        <p>Manage customer ledgers, daily deliveries, expenses, missing cans, and automated offline ExcelJS reporting in one unified system.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right login form card -->
+  <div class="login-form-panel">
+    <mat-card class="login-card">
+      <div class="card-brand-header">
+        <img src="/aqua-logo.png" alt="Logo" class="form-logo" />
+        <div>
+          <h2>Sign In to AquaTrack</h2>
+          <p>Enterprise Management Portal</p>
+        </div>
+      </div>
+
+      <form [formGroup]="form" (ngSubmit)="submit()" class="login-form">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Username</mat-label>
+          <input matInput formControlName="username" placeholder="Enter username (e.g. admin)" />
+          <mat-icon matSuffix color="primary">person</mat-icon>
+          @if (form.get('username')?.hasError('required')) {
+            <mat-error>Username is required</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Password</mat-label>
+          <input matInput type="password" formControlName="password" placeholder="Enter password" />
+          <mat-icon matSuffix color="primary">lock</mat-icon>
+          @if (form.get('password')?.hasError('required')) {
+            <mat-error>Password is required</mat-error>
+          }
+        </mat-form-field>
+
+        <div class="form-options">
+          <mat-checkbox formControlName="rememberMe" color="primary">Keep session active</mat-checkbox>
+          <a href="#" (click)="$event.preventDefault()" class="forgot-link">Forgot password?</a>
+        </div>
+
+        <button mat-flat-button color="primary" class="submit-btn" type="submit" [disabled]="loading()">
+          @if (loading()) {
+            <span>Authenticating...</span>
+          } @else {
+            <span>Sign In to System &rarr;</span>
+          }
+        </button>
+      </form>
+
+      <div class="login-hint">
+        <p><strong>Demo Credentials:</strong> Username: <code>admin</code> | Password: <code>admin123</code></p>
+      </div>
+    </mat-card>
+  </div>
+</div>

@@ -1,0 +1,51 @@
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <h2>Water Can Deliveries</h2>
+      <p>Log daily filled cans supplied, empty cans collected, payments, and print customer invoices.</p>
+    </div>
+    <div class="header-actions">
+      <button mat-flat-button color="primary" (click)="openAddDialog()">
+        <mat-icon>local_shipping</mat-icon> Log New Delivery
+      </button>
+      <button mat-stroked-button (click)="exportExcel()">
+        <mat-icon>download</mat-icon> Export CSV
+      </button>
+    </div>
+  </div>
+
+  <div class="toolbar-section">
+    <div class="filters">
+      <app-search-box
+        placeholder="Search by customer, driver, remarks, ID..."
+        (searchChange)="searchTerm.set($event)"
+      ></app-search-box>
+
+      <mat-form-field appearance="outline" class="date-filter">
+        <mat-label>Filter by Date</mat-label>
+        <input
+          matInput
+          type="date"
+          [ngModel]="dateFilter()"
+          (ngModelChange)="dateFilter.set($event)"
+        />
+        @if (dateFilter()) {
+          <button matSuffix mat-icon-button aria-label="Clear date" (click)="dateFilter.set('')">
+            <mat-icon>close</mat-icon>
+          </button>
+        }
+      </mat-form-field>
+    </div>
+
+    <div class="count-badge">Total Deliveries: {{ filteredDeliveries().length }}</div>
+  </div>
+
+  <app-data-table
+    [data]="filteredDeliveries()"
+    [columns]="columns"
+    [showPrint]="true"
+    (editRow)="openEditDialog($event)"
+    (printRow)="openInvoice($event)"
+    (deleteRow)="confirmDelete($event)"
+  ></app-data-table>
+</div>

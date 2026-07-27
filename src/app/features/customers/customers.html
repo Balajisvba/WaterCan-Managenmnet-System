@@ -1,0 +1,31 @@
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <h2>Customer Directory</h2>
+      <p>Manage customer profiles, security deposits, and outstanding can balances.</p>
+    </div>
+    <div class="header-actions">
+      <button mat-flat-button color="primary" (click)="openAddDialog()">
+        <mat-icon>person_add</mat-icon> Register Customer
+      </button>
+      <button mat-stroked-button (click)="exportExcel()">
+        <mat-icon>download</mat-icon> Export CSV
+      </button>
+    </div>
+  </div>
+
+  <div class="toolbar-section">
+    <app-search-box
+      placeholder="Search customer by name, mobile, or area..."
+      (searchChange)="searchTerm.set($event)"
+    ></app-search-box>
+    <div class="count-badge">Total Customers: {{ filteredCustomers().length }}</div>
+  </div>
+
+  <app-data-table
+    [data]="filteredCustomers()"
+    [columns]="columns"
+    (editRow)="openEditDialog($event)"
+    (deleteRow)="confirmDelete($event)"
+  ></app-data-table>
+</div>

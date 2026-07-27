@@ -1,0 +1,39 @@
+Edited knowledge_transfer_document.md
+
+### Knowledge Transfer (KT) & User Manual Summary
+
+The complete Knowledge Transfer (KT) document for the **AquaTrack Water Can Supply Management System** has been compiled into [knowledge_transfer_document.md](file:///C:/Users/Manoj/.gemini/antigravity/brain/83d7ea22-86b3-4104-bec3-e8980a715a8d/knowledge_transfer_document.md).
+
+---
+
+### Executive Overview
+
+#### 1. System Architecture & Workflows
+- **Offline-First & Serverless**: Runs 100% offline in browser `LocalStorage` with zero backend server dependencies.
+- **Angular 20 Signals Reactivity**: Built with top-down single-direction signals (`computed()`). Adding a delivery, payment, expense, or missing can instantly updates all customer ledgers, KPI cards, and trend charts without reloading.
+- **Multi-Sheet ExcelJS Integration**: Synchronizes 8 workbook sheets (`Dashboard`, `Customers`, `Daily Deliveries`, `Expenses`, `Profit`, `Missing Cans`, `Payments`, `Settings`) seamlessly.
+
+---
+
+#### 2. Quick Start Guide for New Users
+
+1. **Sign In**:
+   - **Username**: `admin` | **Password**: `admin123`
+2. **First-Time Setup (Settings)**:
+   - Configure **Company Name**, **Standard Can Price** (e.g., `₹40`), **Deposit Amount** (e.g., `₹500`), and **Light/Dark Mode**.
+3. **Register Customers (Customers)**:
+   - Add customer details, mobile number, delivery area, and security deposit.
+4. **Log Daily Deliveries (Deliveries)**:
+   - Select customer, enter filled cans delivered and empty cans returned. Rate, total amount ($=\text{filledCans} \times \text{rate}$), and balance ($=\text{total} - \text{paid}$) auto-calculate automatically. Click **Print Invoice** for customer receipts.
+5. **Record Customer Payments (Payments)**:
+   - Record cash/UPI payments against customer ledger accounts to reduce outstanding balances.
+6. **Track Business Expenses (Expenses)**:
+   - Log daily operating costs across Fuel, Salary, Maintenance, Electricity, Vehicle, or Miscellaneous categories.
+7. **Manage Missing / Lost Cans (Missing Cans)**:
+   - Record unreturned cans. Lost quantity ($=\text{missing} - \text{recovered}$) and replacement loss amounts update automatically.
+8. **Export Reports & Backups (Reports & Settings)**:
+   - View daily, weekly, monthly, and yearly profitability reports. Click **Export Excel** or **Export Backup** to download `.xlsx` spreadsheets for complete offline backup and multi-device transfer.
+
+---
+
+For the full detailed manual with diagrams and step-by-step screenshots, see [knowledge_transfer_document.md](file:///C:/Users/Manoj/.gemini/antigravity/brain/83d7ea22-86b3-4104-bec3-e8980a715a8d/knowledge_transfer_document.md).

@@ -1,0 +1,49 @@
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <h2>Missing Cans Tracker</h2>
+      <p>Track unreturned water cans, recovered quantities, replacement costs, and inventory loss.</p>
+    </div>
+    <div class="header-actions">
+      <button mat-flat-button color="primary" (click)="openAddDialog()">
+        <mat-icon>inventory_2</mat-icon> Record Missing Can
+      </button>
+      <button mat-stroked-button (click)="exportExcel()">
+        <mat-icon>download</mat-icon> Export CSV
+      </button>
+    </div>
+  </div>
+
+  <div class="stats-row">
+    <app-card
+      title="Total Lost Cans"
+      [value]="totalLostCansCount()"
+      icon="warning"
+      colorClass="danger"
+      subtitle="Unrecovered Can Count"
+    ></app-card>
+
+    <app-card
+      title="Total Loss Amount"
+      [value]="'₹' + (totalLossAmount() | number)"
+      icon="request_quote"
+      colorClass="warning"
+      subtitle="Financial Replacement Cost"
+    ></app-card>
+  </div>
+
+  <div class="toolbar-section">
+    <app-search-box
+      placeholder="Search by customer, status, ID..."
+      (searchChange)="searchTerm.set($event)"
+    ></app-search-box>
+    <div class="count-badge">Total Records: {{ filteredMissingCans().length }}</div>
+  </div>
+
+  <app-data-table
+    [data]="filteredMissingCans()"
+    [columns]="columns"
+    (editRow)="openEditDialog($event)"
+    (deleteRow)="confirmDelete($event)"
+  ></app-data-table>
+</div>
