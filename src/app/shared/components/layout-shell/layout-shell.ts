@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, OnDestroy, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -28,7 +28,7 @@ import { NotificationService } from '../../../services/notification.service';
   templateUrl: './layout-shell.html',
   styleUrl: './layout-shell.css',
 })
-export class LayoutShellComponent {
+export class LayoutShellComponent implements OnDestroy {
   private readonly themeService = inject(ThemeService);
   private readonly storageService = inject(StorageService);
   private readonly excelService = inject(ExcelService);
@@ -36,6 +36,9 @@ export class LayoutShellComponent {
 
   readonly isDarkMode = computed(() => this.themeService.theme() === 'dark');
   readonly sidenavOpen = signal(true);
+  readonly isMobile = signal(false);
+  readonly sidenavMode = computed(() => (this.isMobile() ? 'over' : 'side'));
+  readonly showBackdrop = computed(() => this.isMobile());
   readonly navigation = [
     { label: 'Dashboard', icon: 'dashboard', route: '/dashboard' },
     { label: 'Customers', icon: 'people', route: '/customers' },
@@ -46,6 +49,38 @@ export class LayoutShellComponent {
     { label: 'Reports', icon: 'analytics', route: '/reports' },
     { label: 'Settings', icon: 'settings', route: '/settings' },
   ];
+
+  constructor() {
+    if (typeof window !== 'undefined') {
+      this.updateViewport();
+      window.addEventListener('resize', this.handleResize);
+    }
+  }
+
+  ngOnDestroy(): void {
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('resize', this.handleResize);
+    }
+  }
+
+  private readonly handleResize = () => {
+    this.updateViewport();
+  };
+
+  private updateViewport(): void {
+    this.isMobile.set(window.innerWidth <= 768);
+    this.sidenavOpen.set(!this.isMobile());
+  }
+
+  toggleSidenav(): void {
+    this.sidenavOpen.set(!this.sidenavOpen());
+  }
+
+  onNavItemClick(): void {
+    if (this.isMobile()) {
+      this.sidenavOpen.set(false);
+    }
+  }
 
   toggleTheme(): void {
     this.themeService.toggleTheme();

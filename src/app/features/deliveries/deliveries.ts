@@ -14,8 +14,10 @@ import { SearchBoxComponent } from '../../shared/components/search-box/search-bo
 import { DataTableComponent, TableColumn } from '../../shared/components/data-table/data-table';
 import { DeliveryDialogComponent } from '../../shared/components/dialogs/delivery-dialog';
 import { InvoiceDialogComponent } from '../../shared/components/dialogs/invoice-dialog';
+import { MonthlyBillDialogComponent } from '../../shared/components/dialogs/monthly-bill-dialog';
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog';
 import { Delivery } from '../../models/app.models';
+import { isDateInRange, toLocalDateInputValue } from '../../utils/date-utils';
 
 @Component({
   selector: 'app-deliveries',
@@ -42,12 +44,54 @@ export class DeliveriesComponent {
   private readonly notification = inject(NotificationService);
 
   readonly searchTerm = signal<string>('');
-  readonly dateFilter = signal<string>('');
+  readonly datePreset = signal<'all' | 'today' | 'week' | 'month' | 'custom'>('all');
+  readonly startDate = signal<string>('');
+  readonly endDate = signal<string>('');
+
+  readonly isFiltered = computed(() => {
+    return !!(this.startDate() || this.endDate() || this.searchTerm());
+  });
+
   readonly deliveries = this.deliveryService.deliveries;
+
+  setPreset(preset: 'all' | 'today' | 'week' | 'month'): void {
+    this.datePreset.set(preset);
+    const now = new Date();
+    const todayStr = toLocalDateInputValue(now);
+
+    if (preset === 'all') {
+      this.startDate.set('');
+      this.endDate.set('');
+    } else if (preset === 'today') {
+      this.startDate.set(todayStr);
+      this.endDate.set(todayStr);
+    } else if (preset === 'week') {
+      const pastWeek = new Date(now);
+      pastWeek.setDate(now.getDate() - 6);
+      this.startDate.set(toLocalDateInputValue(pastWeek));
+      this.endDate.set(todayStr);
+    } else if (preset === 'month') {
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      this.startDate.set(toLocalDateInputValue(monthStart));
+      this.endDate.set(todayStr);
+    }
+  }
+
+  onCustomDateChange(start: string, end: string): void {
+    this.datePreset.set('custom');
+    this.startDate.set(start || '');
+    this.endDate.set(end || '');
+  }
+
+  clearDateFilter(): void {
+    this.setPreset('all');
+    this.searchTerm.set('');
+  }
 
   readonly filteredDeliveries = computed(() => {
     const term = this.searchTerm().toLowerCase().trim();
-    const dateStr = this.dateFilter().trim();
+    const start = this.startDate();
+    const end = this.endDate();
 
     return this.deliveries().filter((d) => {
       const matchesSearch =
@@ -57,7 +101,7 @@ export class DeliveriesComponent {
         d.id.toLowerCase().includes(term) ||
         (d.remarks && d.remarks.toLowerCase().includes(term));
 
-      const matchesDate = !dateStr || (d.deliveryDate && d.deliveryDate.startsWith(dateStr));
+      const matchesDate = !d.deliveryDate || isDateInRange(d.deliveryDate, start, end);
 
       return matchesSearch && matchesDate;
     });
@@ -110,6 +154,16 @@ export class DeliveriesComponent {
     this.dialog.open(InvoiceDialogComponent, {
       width: '650px',
       data: delivery,
+    });
+  }
+
+  openMonthlyBillDialog(customerId?: string): void {
+    this.dialog.open(MonthlyBillDialogComponent, {
+      width: '800px',
+      data: {
+        customers: this.stateService.customers(),
+        selectedCustomerId: customerId,
+      },
     });
   }
 

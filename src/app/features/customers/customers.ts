@@ -50,6 +50,10 @@ export class CustomersComponent {
     );
   });
 
+  readonly totalPendingAmount = computed(() => {
+    return this.filteredCustomers().reduce((sum, c) => sum + (c.pendingAmount || 0), 0);
+  });
+
   readonly columns: TableColumn[] = [
     { key: 'id', label: 'Customer ID' },
     { key: 'name', label: 'Customer Name' },
@@ -59,6 +63,7 @@ export class CustomersComponent {
     { key: 'outstandingCan', label: 'Outstanding Cans', type: 'number' },
     { key: 'totalDelivered', label: 'Total Delivered', type: 'number' },
     { key: 'totalReturned', label: 'Total Returned', type: 'number' },
+    { key: 'pendingAmount', label: 'Pending Amount', type: 'currency' },
     { key: 'status', label: 'Status', type: 'status' },
     { key: 'actions', label: 'Actions', type: 'actions' },
   ];

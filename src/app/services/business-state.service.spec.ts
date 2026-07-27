@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { Customer, Delivery, Expense, MissingCan, Payment } from '../models/app.models';
 
-describe('AquaTrack Financial & Calculation Formulas', () => {
+describe('Dhanam Agencies Financial & Calculation Formulas', () => {
   it('should calculate customer financial balance correctly from invoices and payments', () => {
     const totalInvoiced = 500;
     const totalPaid = 350;

@@ -15,6 +15,20 @@ export interface CustomerLedgerStats {
   balance: number;
 }
 
+export function deriveCustomerStatus(status: string | undefined, balance: number, outstandingCan: number): Customer['status'] {
+  const normalizedStatus = (status || 'Pending').toLowerCase();
+
+  if (normalizedStatus === 'inactive') {
+    return 'Inactive';
+  }
+
+  if (normalizedStatus === 'active') {
+    return 'Active';
+  }
+
+  return balance > 0 || outstandingCan > 0 ? 'Active' : 'Pending';
+}
+
 @Injectable({ providedIn: 'root' })
 export class BusinessStateService {
   private readonly customerService = inject(CustomerService);
@@ -46,20 +60,21 @@ export class BusinessStateService {
       const missingLossCans = custMissing.reduce((sum, m) => sum + (Number(m.lostQuantity) || 0), 0);
       const outstandingCan = Math.max(0, (cust.outstandingCan || 0) + totalDelivered - totalReturned - missingLossCans);
 
-      const totalInvoiced = custDeliveries.reduce((sum, d) => sum + (Number(d.totalAmount) || 0), 0);
-      const deliveryPayments = custDeliveries.reduce((sum, d) => sum + (Number(d.paidAmount) || 0), 0);
-      const directPayments = custPayments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
-      const totalPaid = deliveryPayments + directPayments;
+      // Calculate total pending amount as sum of Balance Due in delivery module for this customer
+      const balance = custDeliveries.reduce(
+        (sum, d) => sum + (d.balance !== undefined && !isNaN(Number(d.balance)) ? Number(d.balance) : Math.max(0, (Number(d.totalAmount) || 0) - (Number(d.paidAmount) || 0))),
+        0
+      );
 
-      const missingLossAmount = custMissing.reduce((sum, m) => sum + (Number(m.lossAmount) || 0), 0);
-      const balance = Math.max(0, totalInvoiced + missingLossAmount - totalPaid);
+      const derivedStatus = deriveCustomerStatus(cust.status, balance, outstandingCan);
 
       return {
         ...cust,
         totalDelivered,
         totalReturned,
         outstandingCan,
-        status: cust.status === 'Inactive' ? 'Inactive' : balance > 0 || outstandingCan > 0 ? 'Active' : 'Pending',
+        pendingAmount: balance,
+        status: derivedStatus,
       };
     });
   });

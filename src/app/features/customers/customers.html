@@ -19,7 +19,12 @@
       placeholder="Search customer by name, mobile, or area..."
       (searchChange)="searchTerm.set($event)"
     ></app-search-box>
-    <div class="count-badge">Total Customers: {{ filteredCustomers().length }}</div>
+    <div class="badges-group" style="display: flex; gap: 12px; align-items: center;">
+      <div class="count-badge">Total Customers: {{ filteredCustomers().length }}</div>
+      <div class="count-badge pending-badge" style="background: #fff3e0; color: #e65100; border: 1px solid #ffe0b2; padding: 6px 14px; border-radius: 20px; font-weight: 600;">
+        Total Pending: ₹{{ totalPendingAmount() | number:'1.0-2' }}
+      </div>
+    </div>
   </div>
 
   <app-data-table
