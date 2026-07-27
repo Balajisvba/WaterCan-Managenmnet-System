@@ -40,7 +40,7 @@ export class SettingsComponent implements OnInit {
   private readonly notification = inject(NotificationService);
 
   readonly form: FormGroup = this.fb.group({
-    companyName: ['AquaTrack Supply Co.', Validators.required],
+    companyName: ['Dhanam Agencies', Validators.required],
     canPrice: [40, [Validators.required, Validators.min(1)]],
     depositAmount: [500, [Validators.required, Validators.min(0)]],
     darkMode: [this.themeService.theme() === 'dark'],
@@ -50,7 +50,7 @@ export class SettingsComponent implements OnInit {
     const saved = this.storageService.getItem<Settings>('aqua-settings');
     if (saved) {
       this.form.patchValue({
-        companyName: saved.companyName || 'AquaTrack Supply Co.',
+        companyName: saved.companyName || 'Dhanam Agencies',
         canPrice: saved.canPrice ?? 40,
         depositAmount: saved.depositAmount ?? 500,
         darkMode: saved.darkMode ?? (this.themeService.theme() === 'dark'),

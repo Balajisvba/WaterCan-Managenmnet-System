@@ -17,6 +17,7 @@ import { InvoiceDialogComponent } from '../../shared/components/dialogs/invoice-
 import { MonthlyBillDialogComponent } from '../../shared/components/dialogs/monthly-bill-dialog';
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog';
 import { Delivery } from '../../models/app.models';
+import { isDateInRange, toLocalDateInputValue } from '../../utils/date-utils';
 
 @Component({
   selector: 'app-deliveries',
@@ -56,7 +57,7 @@ export class DeliveriesComponent {
   setPreset(preset: 'all' | 'today' | 'week' | 'month'): void {
     this.datePreset.set(preset);
     const now = new Date();
-    const todayStr = now.toISOString().split('T')[0];
+    const todayStr = toLocalDateInputValue(now);
 
     if (preset === 'all') {
       this.startDate.set('');
@@ -65,12 +66,13 @@ export class DeliveriesComponent {
       this.startDate.set(todayStr);
       this.endDate.set(todayStr);
     } else if (preset === 'week') {
-      const pastWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-      this.startDate.set(pastWeek.toISOString().split('T')[0]);
+      const pastWeek = new Date(now);
+      pastWeek.setDate(now.getDate() - 6);
+      this.startDate.set(toLocalDateInputValue(pastWeek));
       this.endDate.set(todayStr);
     } else if (preset === 'month') {
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-      this.startDate.set(monthStart.toISOString().split('T')[0]);
+      this.startDate.set(toLocalDateInputValue(monthStart));
       this.endDate.set(todayStr);
     }
   }
@@ -99,12 +101,7 @@ export class DeliveriesComponent {
         d.id.toLowerCase().includes(term) ||
         (d.remarks && d.remarks.toLowerCase().includes(term));
 
-      let matchesDate = true;
-      if (d.deliveryDate) {
-        const dateStr = d.deliveryDate.slice(0, 10);
-        if (start && dateStr < start) matchesDate = false;
-        if (end && dateStr > end) matchesDate = false;
-      }
+      const matchesDate = !d.deliveryDate || isDateInRange(d.deliveryDate, start, end);
 
       return matchesSearch && matchesDate;
     });

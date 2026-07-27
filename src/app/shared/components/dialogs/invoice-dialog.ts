@@ -14,7 +14,7 @@ import { Delivery } from '../../../models/app.models';
     <div class="invoice-container" id="printable-invoice">
       <div class="invoice-header">
         <div class="company-brand">
-          <h2>AquaTrack</h2>
+          <h2>Dhanam Agencies</h2>
           <p>Water Can Supply Management</p>
         </div>
         <div class="invoice-meta">
@@ -77,7 +77,7 @@ import { Delivery } from '../../../models/app.models';
       </div>
 
       <div class="invoice-footer">
-        <p>Thank you for choosing AquaTrack Water Supply!</p>
+        <p>Thank you for choosing Dhanam Agencies!</p>
         <p class="small">System generated receipt - No signature required.</p>
       </div>
     </div>
