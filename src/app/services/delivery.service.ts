@@ -1,26 +1,26 @@
 import { Injectable, signal } from '@angular/core';
 import { Delivery } from '../models/app.models';
 import { buildSeedDeliveries, generateId } from '../utils/sample-data';
-import { StorageService } from './storage.service';
+import { GoogleSheetService } from './google-sheet.service';
 
 @Injectable({ providedIn: 'root' })
 export class DeliveryService {
   readonly deliveries = signal<Delivery[]>([]);
 
-  constructor(private readonly storageService: StorageService) {
+  constructor(private readonly googleSheetService: GoogleSheetService) {
     this.load();
   }
 
-  load(): void {
-    const stored = this.storageService.getItem<Delivery[]>('aqua-deliveries');
-    this.deliveries.set(stored ?? buildSeedDeliveries());
+  async load(): Promise<void> {
+    try {
+      const stored = await this.googleSheetService.read<Delivery>('Deliveries');
+      this.deliveries.set(stored.length ? stored : buildSeedDeliveries());
+    } catch {
+      this.deliveries.set(buildSeedDeliveries());
+    }
   }
 
-  save(): void {
-    this.storageService.setItem('aqua-deliveries', this.deliveries());
-  }
-
-  add(delivery: Omit<Delivery, 'id'>): Delivery {
+  async add(delivery: Omit<Delivery, 'id'>): Promise<Delivery> {
     const totalAmount = delivery.filledCans * delivery.ratePerCan;
     const balance = Math.max(0, totalAmount - delivery.paidAmount);
     const entity: Delivery = {
@@ -29,26 +29,25 @@ export class DeliveryService {
       totalAmount,
       balance,
     };
-    this.deliveries.update((items) => [entity, ...items]);
-    this.save();
+    await this.googleSheetService.create<Delivery>('Deliveries', entity);
+    await this.load();
     return entity;
   }
 
-  update(delivery: Delivery): void {
+  async update(delivery: Delivery): Promise<void> {
     const totalAmount = delivery.filledCans * delivery.ratePerCan;
     const balance = Math.max(0, totalAmount - delivery.paidAmount);
     const entity = { ...delivery, totalAmount, balance };
-    this.deliveries.update((items) => items.map((item) => (item.id === delivery.id ? entity : item)));
-    this.save();
+    await this.googleSheetService.update<Delivery>('Deliveries', entity);
+    await this.load();
   }
 
-  remove(id: string): void {
-    this.deliveries.update((items) => items.filter((item) => item.id !== id));
-    this.save();
+  async remove(id: string): Promise<void> {
+    await this.googleSheetService.delete('Deliveries', id);
+    await this.load();
   }
 
   setAll(deliveries: Delivery[]): void {
     this.deliveries.set(deliveries);
-    this.save();
   }
 }

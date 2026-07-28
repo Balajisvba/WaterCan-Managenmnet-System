@@ -1,5 +1,5 @@
 import { Component, computed, inject, OnDestroy, signal } from '@angular/core';
-import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatListModule } from '@angular/material/list';
@@ -7,7 +7,7 @@ import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { ThemeService } from '../../../services/theme.service';
-import { StorageService } from '../../../services/storage.service';
+import { GoogleAuthService } from '../../../services/google-auth.service';
 import { ExcelService } from '../../../services/excel.service';
 import { NotificationService } from '../../../services/notification.service';
 
@@ -30,7 +30,8 @@ import { NotificationService } from '../../../services/notification.service';
 })
 export class LayoutShellComponent implements OnDestroy {
   private readonly themeService = inject(ThemeService);
-  private readonly storageService = inject(StorageService);
+  private readonly authService = inject(GoogleAuthService);
+  private readonly router = inject(Router);
   private readonly excelService = inject(ExcelService);
   private readonly notification = inject(NotificationService);
 
@@ -96,7 +97,8 @@ export class LayoutShellComponent implements OnDestroy {
   }
 
   logout(): void {
-    this.storageService.removeItem('aqua-login');
-    window.location.reload();
+    this.authService.logout();
+    this.notification.success('Signed out successfully');
+    this.router.navigate(['/login']);
   }
 }

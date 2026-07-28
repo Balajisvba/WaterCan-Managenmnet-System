@@ -7,7 +7,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { Router } from '@angular/router';
-import { StorageService } from '../../../services/storage.service';
+import { GoogleAuthService } from '../../../services/google-auth.service';
 import { NotificationService } from '../../../services/notification.service';
 
 @Component({
@@ -19,7 +19,7 @@ import { NotificationService } from '../../../services/notification.service';
 export class LoginComponent {
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
-  private readonly storageService = inject(StorageService);
+  private readonly authService = inject(GoogleAuthService);
   private readonly notifications = inject(NotificationService);
 
   readonly form: FormGroup = this.fb.group({
@@ -29,21 +29,16 @@ export class LoginComponent {
   });
   readonly loading = signal(false);
 
-  submit(): void {
-    if (this.form.invalid) {
-      this.form.markAllAsTouched();
-      return;
-    }
-
+  async submit(): Promise<void> {
     this.loading.set(true);
-    const { username, password, rememberMe } = this.form.value;
-    if (username === 'admin' && password === 'admin123') {
-      this.storageService.setItem('aqua-login', { username, rememberMe });
-      this.notifications.success('Welcome back, Dhanam Agencies admin');
-      this.router.navigateByUrl('/dashboard');
-    } else {
-      this.notifications.error('Invalid credentials');
+    try {
+      await this.authService.login();
+      this.notifications.success('Signed in with Google');
+      await this.router.navigateByUrl('/dashboard');
+    } catch (error) {
+      this.notifications.error('Google sign-in failed. Please try again.');
+    } finally {
+      this.loading.set(false);
     }
-    this.loading.set(false);
   }
 }

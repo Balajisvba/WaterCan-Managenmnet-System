@@ -75,7 +75,7 @@ export class ExpenseDialogComponent {
   readonly form: FormGroup = this.fb.group({
     category: [this.data?.category || 'Fuel', Validators.required],
     amount: [this.data?.amount ?? 0, [Validators.required, Validators.min(1)]],
-    date: [this.data?.date ? this.data.date.split('T')[0] : new Date().toISOString().split('T')[0], Validators.required],
+    date: [this.data?.date ? this.data.date.split('T')[0] : '', Validators.required],
     remarks: [this.data?.remarks || ''],
   });
 

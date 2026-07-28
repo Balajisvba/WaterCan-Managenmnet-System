@@ -1,48 +1,47 @@
 import { Injectable, signal } from '@angular/core';
 import { Expense } from '../models/app.models';
 import { buildSeedExpenses, generateId } from '../utils/sample-data';
-import { StorageService } from './storage.service';
+import { GoogleSheetService } from './google-sheet.service';
 
 @Injectable({ providedIn: 'root' })
 export class ExpenseService {
   readonly expenses = signal<Expense[]>([]);
 
-  constructor(private readonly storageService: StorageService) {
+  constructor(private readonly googleSheetService: GoogleSheetService) {
     this.load();
   }
 
-  load(): void {
-    const stored = this.storageService.getItem<Expense[]>('aqua-expenses');
-    this.expenses.set(stored ?? buildSeedExpenses());
+  async load(): Promise<void> {
+    try {
+      const stored = await this.googleSheetService.read<Expense>('Expenses');
+      this.expenses.set(stored.length ? stored : buildSeedExpenses());
+    } catch {
+      this.expenses.set(buildSeedExpenses());
+    }
   }
 
-  save(): void {
-    this.storageService.setItem('aqua-expenses', this.expenses());
-  }
-
-  add(expense: Omit<Expense, 'id' | 'createdAt'>): Expense {
+  async add(expense: Omit<Expense, 'id' | 'createdAt'>): Promise<Expense> {
     const entity: Expense = {
       ...expense,
       id: generateId('E'),
       createdAt: new Date().toISOString(),
     };
-    this.expenses.update((items) => [entity, ...items]);
-    this.save();
+    await this.googleSheetService.create<Expense>('Expenses', entity);
+    await this.load();
     return entity;
   }
 
-  update(expense: Expense): void {
-    this.expenses.update((items) => items.map((item) => (item.id === expense.id ? { ...item, ...expense } : item)));
-    this.save();
+  async update(expense: Expense): Promise<void> {
+    await this.googleSheetService.update<Expense>('Expenses', expense);
+    await this.load();
   }
 
-  remove(id: string): void {
-    this.expenses.update((items) => items.filter((item) => item.id !== id));
-    this.save();
+  async remove(id: string): Promise<void> {
+    await this.googleSheetService.delete('Expenses', id);
+    await this.load();
   }
 
   setAll(expenses: Expense[]): void {
     this.expenses.set(expenses);
-    this.save();
   }
 }

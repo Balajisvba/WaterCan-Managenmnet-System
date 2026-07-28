@@ -1,44 +1,43 @@
 import { Injectable, signal } from '@angular/core';
 import { Payment } from '../models/app.models';
 import { buildSeedPayments, generateId } from '../utils/sample-data';
-import { StorageService } from './storage.service';
+import { GoogleSheetService } from './google-sheet.service';
 
 @Injectable({ providedIn: 'root' })
 export class PaymentService {
   readonly payments = signal<Payment[]>([]);
 
-  constructor(private readonly storageService: StorageService) {
+  constructor(private readonly googleSheetService: GoogleSheetService) {
     this.load();
   }
 
-  load(): void {
-    const stored = this.storageService.getItem<Payment[]>('aqua-payments');
-    this.payments.set(stored ?? buildSeedPayments());
+  async load(): Promise<void> {
+    try {
+      const stored = await this.googleSheetService.read<Payment>('Payments');
+      this.payments.set(stored.length ? stored : buildSeedPayments());
+    } catch {
+      this.payments.set(buildSeedPayments());
+    }
   }
 
-  save(): void {
-    this.storageService.setItem('aqua-payments', this.payments());
-  }
-
-  add(payment: Omit<Payment, 'id'>): Payment {
+  async add(payment: Omit<Payment, 'id'>): Promise<Payment> {
     const entity: Payment = { ...payment, id: generateId('P') };
-    this.payments.update((items) => [entity, ...items]);
-    this.save();
+    await this.googleSheetService.create<Payment>('Payments', entity);
+    await this.load();
     return entity;
   }
 
-  update(payment: Payment): void {
-    this.payments.update((items) => items.map((item) => (item.id === payment.id ? { ...item, ...payment } : item)));
-    this.save();
+  async update(payment: Payment): Promise<void> {
+    await this.googleSheetService.update<Payment>('Payments', payment);
+    await this.load();
   }
 
-  remove(id: string): void {
-    this.payments.update((items) => items.filter((item) => item.id !== id));
-    this.save();
+  async remove(id: string): Promise<void> {
+    await this.googleSheetService.delete('Payments', id);
+    await this.load();
   }
 
   setAll(payments: Payment[]): void {
     this.payments.set(payments);
-    this.save();
   }
 }

@@ -50,15 +50,15 @@
 
         <button mat-flat-button color="primary" class="submit-btn" type="submit" [disabled]="loading()">
           @if (loading()) {
-            <span>Authenticating...</span>
+            <span>Signing in with Google...</span>
           } @else {
-            <span>Sign In to System &rarr;</span>
+            <span>Sign in with Google</span>
           }
         </button>
       </form>
 
       <div class="login-hint">
-        <p><strong>Demo Credentials:</strong> Username: <code>admin</code> | Password: <code>admin123</code></p>
+        <p>Use your Google account to access the Water Can Management dashboard.</p>
       </div>
     </mat-card>
   </div>

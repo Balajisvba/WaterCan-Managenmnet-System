@@ -141,6 +141,7 @@ export function buildSeedMissingCans(): MissingCan[] {
 
 export function buildSeedSettings(): Settings {
   return {
+    id: 'S-1',
     companyName: 'Dhanam Agencies',
     companyLogo: '',
     canPrice: 40,

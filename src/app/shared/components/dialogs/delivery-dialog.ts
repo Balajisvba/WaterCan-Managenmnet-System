@@ -125,7 +125,7 @@ export class DeliveryDialogComponent implements OnInit {
     deliveryDate: [
       this.data.delivery?.deliveryDate
         ? this.data.delivery.deliveryDate.split('T')[0]
-        : new Date().toISOString().split('T')[0],
+        : '',
       Validators.required,
     ],
   });

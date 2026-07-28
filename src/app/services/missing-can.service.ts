@@ -1,26 +1,26 @@
 import { Injectable, signal } from '@angular/core';
 import { MissingCan } from '../models/app.models';
 import { buildSeedMissingCans, generateId } from '../utils/sample-data';
-import { StorageService } from './storage.service';
+import { GoogleSheetService } from './google-sheet.service';
 
 @Injectable({ providedIn: 'root' })
 export class MissingCanService {
   readonly missingCans = signal<MissingCan[]>([]);
 
-  constructor(private readonly storageService: StorageService) {
+  constructor(private readonly googleSheetService: GoogleSheetService) {
     this.load();
   }
 
-  load(): void {
-    const stored = this.storageService.getItem<MissingCan[]>('aqua-missing-cans');
-    this.missingCans.set(stored ?? buildSeedMissingCans());
+  async load(): Promise<void> {
+    try {
+      const stored = await this.googleSheetService.read<MissingCan>('MissingCans');
+      this.missingCans.set(stored.length ? stored : buildSeedMissingCans());
+    } catch {
+      this.missingCans.set(buildSeedMissingCans());
+    }
   }
 
-  save(): void {
-    this.storageService.setItem('aqua-missing-cans', this.missingCans());
-  }
-
-  add(entry: Omit<MissingCan, 'id'>): MissingCan {
+  async add(entry: Omit<MissingCan, 'id'>): Promise<MissingCan> {
     const lostQuantity = Math.max(0, entry.missingQuantity - entry.recoveredQuantity);
     const lossAmount = lostQuantity * entry.costPerCan;
     const entity: MissingCan = {
@@ -30,26 +30,25 @@ export class MissingCanService {
       lossAmount,
       createdAt: entry.createdAt || new Date().toISOString(),
     };
-    this.missingCans.update((items) => [entity, ...items]);
-    this.save();
+    await this.googleSheetService.create<MissingCan>('MissingCans', entity);
+    await this.load();
     return entity;
   }
 
-  update(entry: MissingCan): void {
+  async update(entry: MissingCan): Promise<void> {
     const lostQuantity = Math.max(0, entry.missingQuantity - entry.recoveredQuantity);
     const lossAmount = lostQuantity * entry.costPerCan;
     const entity = { ...entry, lostQuantity, lossAmount };
-    this.missingCans.update((items) => items.map((item) => (item.id === entry.id ? entity : item)));
-    this.save();
+    await this.googleSheetService.update<MissingCan>('MissingCans', entity);
+    await this.load();
   }
 
-  remove(id: string): void {
-    this.missingCans.update((items) => items.filter((item) => item.id !== id));
-    this.save();
+  async remove(id: string): Promise<void> {
+    await this.googleSheetService.delete('MissingCans', id);
+    await this.load();
   }
 
   setAll(missingCans: MissingCan[]): void {
     this.missingCans.set(missingCans);
-    this.save();
   }
 }
