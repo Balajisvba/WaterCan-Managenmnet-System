@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { Workbook, Worksheet } from 'exceljs';
 import { saveAs } from 'file-saver-es';
 import { Customer, Delivery, Expense, MissingCan, Payment, ReportSummary, Settings } from '../models/app.models';
-import { StorageService } from './storage.service';
+import { SettingsService } from './settings.service';
 import { CustomerService } from './customer.service';
 import { DeliveryService } from './delivery.service';
 import { ExpenseService } from './expense.service';
@@ -22,14 +22,12 @@ export interface ExcelWorkbookData {
 
 @Injectable({ providedIn: 'root' })
 export class ExcelService {
-  private readonly storageService = inject(StorageService);
+  private readonly settingsService = inject(SettingsService);
   private readonly customerService = inject(CustomerService);
   private readonly deliveryService = inject(DeliveryService);
   private readonly expenseService = inject(ExpenseService);
   private readonly paymentService = inject(PaymentService);
   private readonly missingCanService = inject(MissingCanService);
-
-  private readonly workbookKey = 'aqua-workbook';
 
   async importWorkbook(file: File): Promise<boolean> {
     try {
@@ -37,7 +35,6 @@ export class ExcelService {
       await workbook.xlsx.load(await file.arrayBuffer());
 
       const data = this.serializeWorkbook(workbook);
-      this.storageService.setItem(this.workbookKey, data);
 
       if (data.customers && data.customers.length > 0) {
         this.customerService.setAll(data.customers);
@@ -53,6 +50,9 @@ export class ExcelService {
       }
       if (data.missing && data.missing.length > 0) {
         this.missingCanService.setAll(data.missing);
+      }
+      if (data.settings && data.settings.length > 0) {
+        await this.settingsService.save(data.settings[0]);
       }
       return true;
     } catch (err) {
@@ -70,17 +70,7 @@ export class ExcelService {
       missing: this.missingCanService.missingCans(),
       payments: this.paymentService.payments(),
       profit: [],
-      settings: [
-        this.storageService.getItem<Settings>('aqua-settings') || {
-          companyName: 'Dhanam Agencies',
-          companyLogo: '',
-          canPrice: 40,
-          depositAmount: 500,
-          theme: 'light',
-          darkMode: false,
-          backupDate: new Date().toISOString(),
-        },
-      ],
+      settings: [this.settingsService.settings()],
     };
 
     const workbook = new Workbook();

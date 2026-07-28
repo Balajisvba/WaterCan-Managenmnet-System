@@ -62,6 +62,7 @@ export interface MissingCan {
 }
 
 export interface Settings {
+  id: string;
   companyName: string;
   companyLogo: string;
   canPrice: number;

@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, effect, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -9,7 +9,7 @@ import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDividerModule } from '@angular/material/divider';
 import { ThemeService } from '../../services/theme.service';
-import { StorageService } from '../../services/storage.service';
+import { SettingsService } from '../../services/settings.service';
 import { ExcelService } from '../../services/excel.service';
 import { NotificationService } from '../../services/notification.service';
 import { Settings } from '../../models/app.models';
@@ -35,7 +35,7 @@ import { buildSeedSettings } from '../../utils/sample-data';
 export class SettingsComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly themeService = inject(ThemeService);
-  private readonly storageService = inject(StorageService);
+  private readonly settingsService = inject(SettingsService);
   private readonly excelService = inject(ExcelService);
   private readonly notification = inject(NotificationService);
 
@@ -47,22 +47,32 @@ export class SettingsComponent implements OnInit {
   });
 
   ngOnInit(): void {
-    const saved = this.storageService.getItem<Settings>('aqua-settings');
-    if (saved) {
+    const saved = this.settingsService.settings();
+    this.form.patchValue({
+      companyName: saved.companyName || 'Dhanam Agencies',
+      canPrice: saved.canPrice ?? 40,
+      depositAmount: saved.depositAmount ?? 500,
+      darkMode: saved.darkMode ?? (this.themeService.theme() === 'dark'),
+    });
+
+    effect(() => {
+      const updated = this.settingsService.settings();
       this.form.patchValue({
-        companyName: saved.companyName || 'Dhanam Agencies',
-        canPrice: saved.canPrice ?? 40,
-        depositAmount: saved.depositAmount ?? 500,
-        darkMode: saved.darkMode ?? (this.themeService.theme() === 'dark'),
+        companyName: updated.companyName || 'Dhanam Agencies',
+        canPrice: updated.canPrice ?? 40,
+        depositAmount: updated.depositAmount ?? 500,
+        darkMode: updated.darkMode ?? (this.themeService.theme() === 'dark'),
       });
-    }
+    });
   }
 
-  saveSettings(): void {
+  async saveSettings(): Promise<void> {
     if (this.form.invalid) return;
 
     const value = this.form.value;
+    const existing = this.settingsService.settings();
     const settingsEntity: Settings = {
+      id: existing.id ?? 'S-1',
       companyName: value.companyName,
       companyLogo: '',
       canPrice: Number(value.canPrice),
@@ -72,7 +82,7 @@ export class SettingsComponent implements OnInit {
       backupDate: new Date().toISOString(),
     };
 
-    this.storageService.setItem('aqua-settings', settingsEntity);
+    await this.settingsService.save(settingsEntity);
     this.themeService.setTheme(value.darkMode ? 'dark' : 'light');
     this.notification.success('System settings saved successfully');
   }

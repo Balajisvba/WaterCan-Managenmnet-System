@@ -84,7 +84,7 @@ export class PaymentDialogComponent {
     paymentDate: [
       this.data.payment?.paymentDate
         ? this.data.payment.paymentDate.split('T')[0]
-        : new Date().toISOString().split('T')[0],
+        : '',
       Validators.required,
     ],
     remarks: [this.data.payment?.remarks || ''],

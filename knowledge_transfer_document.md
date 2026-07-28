@@ -176,3 +176,404 @@ AquaTrack maintains deterministic business logic across all modules:
 - **Browser Storage Clean-up**: Do not clear browser cache/cookies without first clicking **Export Excel** in Settings to back up your data.
 - **Offline Functionality**: AquaTrack runs completely offline without internet connection once loaded in your browser.
 - **Multi-Device Sync**: Use **Export Excel** on Device A and **Import Workbook** on Device B to transfer offline databases seamlessly.
+
+
+
+Prompt to migration
+
+
+# AquaTrack Storage Layer Migration Prompt (Excel → Shared Google Sheets)
+
+Act as a Senior Angular 20 Architect and Migration Engineer.
+
+I already have a fully completed Angular 20 application named **AquaTrack - Water Can Supply Management System**.
+
+## IMPORTANT
+
+This project is already fully developed.
+
+**DO NOT:**
+
+* Create a new Angular project.
+* Change the project structure.
+* Change the folder structure.
+* Change any UI.
+* Change any HTML.
+* Change any SCSS.
+* Change Angular Material components.
+* Change Angular Signals.
+* Change routing.
+* Change business logic.
+* Change calculations.
+* Change reports.
+* Change dashboard calculations.
+* Change Excel Import.
+* Change Excel Export.
+* Rewrite existing modules.
+
+The application is already working correctly.
+
+The **ONLY objective** is to replace the current Excel/LocalStorage storage mechanism with a **shared Google Sheet** so that multiple users (drivers, office staff, admin) can work on the same live data.
+
+---
+
+# Current Architecture
+
+Current Storage Flow
+
+Component
+
+↓
+
+BusinessStateService
+
+↓
+
+LocalStorage
+
+↓
+
+ExcelJS
+
+↓
+
+Excel File
+
+---
+
+# New Required Architecture
+
+Component
+
+↓
+
+BusinessStateService
+
+↓
+
+GoogleSheetService
+
+↓
+
+Google Apps Script Web API
+
+↓
+
+Shared Google Spreadsheet
+
+The Google Spreadsheet becomes the **single source of truth**.
+
+Excel is no longer the primary database.
+
+Excel Import and Excel Export must continue working exactly as before.
+
+---
+
+# Migration Requirement
+
+Do NOT modify any business logic.
+
+Simply replace every LocalStorage/Excel read/write operation with HTTP requests to Google Apps Script.
+
+Every existing component should continue to function without any UI changes.
+
+The only modified layer should be the data source.
+
+---
+
+# Existing Modules (Do Not Modify)
+
+* Login
+* Dashboard
+* Customers
+* Deliveries
+* Payments
+* Expenses
+* Missing Cans
+* Reports
+* Settings
+* Excel Import
+* Excel Export
+
+These modules already work correctly.
+
+Only update their storage implementation.
+
+---
+
+# Existing Business Logic (Must Remain Exactly the Same)
+
+Do not modify any calculations.
+
+Keep:
+
+* Outstanding Can Calculation
+* Revenue Calculation
+* Expense Calculation
+* Profit Calculation
+* Customer Ledger
+* Dashboard KPIs
+* Missing Can Calculation
+* Payment Calculation
+
+No formula should change.
+
+---
+
+# Existing Signals
+
+Angular Signals are already implemented.
+
+Do not remove them.
+
+Do not rewrite them.
+
+Simply update the signal values after receiving data from Google Sheets.
+
+---
+
+# Replace Only These Operations
+
+Replace
+
+* LocalStorage.getItem()
+* LocalStorage.setItem()
+* LocalStorage.removeItem()
+
+Replace ExcelJS CRUD operations used as the primary storage.
+
+Instead use
+
+Google Apps Script REST API
+
+through
+
+GoogleSheetService.
+
+---
+
+# Google Spreadsheet
+
+Use one shared spreadsheet.
+
+Spreadsheet Name
+
+AquaTrack Database
+
+The spreadsheet already contains the same sheets as the Excel workbook.
+
+Sheets
+
+* Customers
+* Deliveries
+* Payments
+* Expenses
+* MissingCans
+* Settings
+* Dashboard
+* Reports
+
+Do not modify sheet names.
+
+Do not modify column names.
+
+Do not modify column order.
+
+The spreadsheet structure must remain identical to the current Excel workbook.
+
+---
+
+# Google Apps Script
+
+Generate a complete Google Apps Script project.
+
+The script must expose REST APIs.
+
+Support
+
+GET
+
+POST
+
+PUT
+
+DELETE
+
+Return JSON responses.
+
+Enable CORS.
+
+Deploy as Web App.
+
+---
+
+# Angular Changes
+
+Create only one new service
+
+GoogleSheetService
+
+Responsibilities
+
+* Read records
+* Insert records
+* Update records
+* Delete records
+* Search records
+* Handle HTTP communication
+* Retry failed requests
+* Handle errors
+* Cache data if needed
+
+Do not modify component logic.
+
+Update existing services to call GoogleSheetService.
+
+---
+
+# Services to Update
+
+Only replace their storage implementation.
+
+CustomerService
+
+DeliveryService
+
+ExpenseService
+
+PaymentService
+
+MissingCanService
+
+DashboardService
+
+BusinessStateService
+
+Business logic must remain unchanged.
+
+---
+
+# Auto Refresh
+
+Implement automatic synchronization.
+
+Every 10 seconds
+
+↓
+
+Read latest data from Google Sheets
+
+↓
+
+Update Angular Signals
+
+↓
+
+Refresh Dashboard
+
+↓
+
+Refresh Tables
+
+↓
+
+Refresh Charts
+
+No page reload.
+
+---
+
+# Conflict Handling
+
+If multiple users update simultaneously
+
+Always load the latest data from Google Sheets.
+
+Prevent duplicate customer IDs.
+
+Prevent duplicate delivery IDs.
+
+Use UUIDs and timestamps.
+
+---
+
+# Excel
+
+Keep existing functionality.
+
+Excel Import
+
+Excel Export
+
+Backup
+
+Restore
+
+Do not remove any Excel features.
+
+Excel is now only
+
+* Import Tool
+* Export Tool
+* Backup Tool
+
+Google Sheets becomes the live operational database.
+
+---
+
+# Error Handling
+
+Handle
+
+* Network failure
+* Google Apps Script timeout
+* Invalid response
+* Missing sheet
+* Missing columns
+* Duplicate records
+
+Display Angular Material Snackbars.
+
+---
+
+# Environment
+
+Update only
+
+environment.ts
+
+environment.prod.ts
+
+Store
+
+* Google Apps Script URL
+* Spreadsheet ID
+* Auto Refresh Interval
+
+---
+
+# Deliverables
+
+Generate only the migration code.
+
+Do not generate a new project.
+
+Do not recreate components.
+
+Do not redesign the UI.
+
+Generate
+
+* Google Apps Script
+* GoogleSheetService
+* Updated existing services
+* API integration
+* Environment configuration
+* Migration guide
+* Google Sheet setup guide
+* Apps Script deployment guide
+
+The final application must look and behave exactly like the existing AquaTrack application.
+
+The only difference should be that all CRUD operations use one shared Google Spreadsheet instead of LocalStorage/ExcelJS as the primary storage.
+
