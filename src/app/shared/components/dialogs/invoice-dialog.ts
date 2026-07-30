@@ -5,11 +5,12 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDividerModule } from '@angular/material/divider';
 import { Delivery } from '../../../models/app.models';
+import { LocalDatePipe } from '../../pipes/local-date.pipe';
 
 @Component({
   selector: 'app-invoice-dialog',
   standalone: true,
-  imports: [CommonModule, MatDialogModule, MatButtonModule, MatIconModule, MatDividerModule],
+  imports: [CommonModule, MatDialogModule, MatButtonModule, MatIconModule, MatDividerModule, LocalDatePipe],
   template: `
     <div class="invoice-container" id="printable-invoice">
       <div class="invoice-header">
@@ -20,7 +21,7 @@ import { Delivery } from '../../../models/app.models';
         <div class="invoice-meta">
           <h3>INVOICE</h3>
           <p><strong>Invoice #:</strong> {{ data.id }}</p>
-          <p><strong>Date:</strong> {{ data.deliveryDate | date:'mediumDate' }}</p>
+          <p><strong>Date:</strong> {{ data.deliveryDate | localDate }}</p>
         </div>
       </div>
 

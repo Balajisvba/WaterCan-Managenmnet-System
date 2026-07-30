@@ -10,14 +10,20 @@ declare namespace google {
         error_description?: string;
       }
 
+      interface TokenClientError {
+        type: 'popup_failed_to_open' | 'popup_closed' | 'unknown';
+        message?: string;
+      }
+
       interface TokenClientConfig {
         client_id: string;
         scope: string;
         callback: (response: TokenResponse) => void;
+        error_callback?: (error: TokenClientError) => void;
       }
 
       interface RequestAccessTokenOptions {
-        prompt?: string;
+        prompt?: '' | 'none' | 'consent' | 'select_account';
         hint?: string;
         login_hint?: string;
         include_granted_scopes?: boolean;

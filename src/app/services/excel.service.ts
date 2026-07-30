@@ -31,29 +31,21 @@ export class ExcelService {
 
   async importWorkbook(file: File): Promise<boolean> {
     try {
+      if (file.size > 10 * 1024 * 1024) {
+        throw new Error('The workbook is larger than the 10 MB restore limit');
+      }
+
       const workbook = new Workbook();
       await workbook.xlsx.load(await file.arrayBuffer());
 
       const data = this.serializeWorkbook(workbook);
 
-      if (data.customers && data.customers.length > 0) {
-        this.customerService.setAll(data.customers);
-      }
-      if (data.deliveries && data.deliveries.length > 0) {
-        this.deliveryService.setAll(data.deliveries);
-      }
-      if (data.expenses && data.expenses.length > 0) {
-        this.expenseService.setAll(data.expenses);
-      }
-      if (data.payments && data.payments.length > 0) {
-        this.paymentService.setAll(data.payments);
-      }
-      if (data.missing && data.missing.length > 0) {
-        this.missingCanService.setAll(data.missing);
-      }
-      if (data.settings && data.settings.length > 0) {
-        await this.settingsService.save(data.settings[0]);
-      }
+      await this.customerService.replaceAll(data.customers);
+      await this.deliveryService.replaceAll(data.deliveries);
+      await this.expenseService.replaceAll(data.expenses);
+      await this.paymentService.replaceAll(data.payments);
+      await this.missingCanService.replaceAll(data.missing);
+      await this.settingsService.replaceAll(data.settings);
       return true;
     } catch (err) {
       console.error('Error importing workbook:', err);
@@ -128,7 +120,9 @@ export class ExcelService {
     for (const row of data) {
       const values = headers.map((header) => {
         const val = (row as Record<string, unknown>)[header];
-        const escaped = ('' + (val ?? '')).replace(/"/g, '\\"');
+        const text = String(val ?? '');
+        const safeText = /^[=+\-@]/.test(text) ? `'${text}` : text;
+        const escaped = safeText.replace(/"/g, '""');
         return `"${escaped}"`;
       });
       csvRows.push(values.join(','));
@@ -155,7 +149,7 @@ export class ExcelService {
       fgColor: { argb: '1E88E5' },
     };
 
-    rows.forEach((row) => sheet.addRow(headers.map((header) => (row as Record<string, unknown>)[header])));
+    rows.forEach((row) => sheet.addRow(headers.map((header) => this.safeWorkbookValue((row as Record<string, unknown>)[header]))));
 
     sheet.columns.forEach((col) => {
       col.width = 20;
@@ -221,5 +215,12 @@ export class ExcelService {
         return hasValue ? (obj as T) : null;
       })
       .filter((item): item is T => item !== null);
+  }
+
+  private safeWorkbookValue(value: unknown): unknown {
+    if (typeof value === 'string' && /^[=+\-@]/.test(value)) {
+      return `'${value}`;
+    }
+    return value;
   }
 }

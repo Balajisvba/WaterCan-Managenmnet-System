@@ -1,8 +1,10 @@
-import { Injectable, signal } from '@angular/core';
+import { DOCUMENT } from '@angular/common';
+import { Injectable, inject, signal } from '@angular/core';
 import { StorageService } from './storage.service';
 
 @Injectable({ providedIn: 'root' })
 export class ThemeService {
+  private readonly document = inject(DOCUMENT);
   readonly theme = signal<'light' | 'dark'>('light');
 
   constructor(private readonly storageService: StorageService) {
@@ -10,6 +12,7 @@ export class ThemeService {
     if (storedTheme) {
       this.theme.set(storedTheme);
     }
+    this.applyTheme(this.theme());
   }
 
   toggleTheme(): void {
@@ -20,5 +23,10 @@ export class ThemeService {
   setTheme(theme: 'light' | 'dark'): void {
     this.theme.set(theme);
     this.storageService.setItem('aqua-theme', theme);
+    this.applyTheme(theme);
+  }
+
+  private applyTheme(theme: 'light' | 'dark'): void {
+    this.document.documentElement.dataset['theme'] = theme;
   }
 }
