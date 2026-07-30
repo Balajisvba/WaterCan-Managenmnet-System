@@ -3,12 +3,6 @@ import { environment } from '../../environments/environment';
 
 const SCOPES = 'https://www.googleapis.com/auth/spreadsheets';
 
-interface PendingTokenRequest {
-  resolve: () => void;
-  reject: (error: Error) => void;
-  timeoutId: number;
-}
-
 @Injectable({ providedIn: 'root' })
 export class GoogleAuthService {
   readonly isSignedIn = signal(false);
@@ -21,6 +15,42 @@ export class GoogleAuthService {
     if (typeof window !== 'undefined') {
       this.pollForGoogleClient();
     }
+  }
+
+  async login(): Promise<void> {
+    await this.waitForClient();
+    await this.requestToken('select_account');
+  }
+
+  async restoreSession(): Promise<void> {
+    if (typeof window === 'undefined') return;
+
+    if (this.hasValidToken()) {
+      return;
+    }
+
+    const storedSession = this.readStoredSession();
+    if (storedSession) {
+      this.accessToken.set(storedSession.accessToken);
+      this.tokenExpiresAt = storedSession.expiresAt;
+      this.isSignedIn.set(true);
+      return;
+    }
+
+    this.clearSession();
+  }
+
+  logout(): void {
+    const token = this.accessToken();
+    this.clearSession();
+
+    if (token && (window as any).google?.accounts?.oauth2) {
+      (window as any).google.accounts.oauth2.revoke(token, () => undefined);
+    }
+  }
+
+  getAccessToken(): string | null {
+    return this.accessToken();
   }
 
   private pollForGoogleClient(): void {
@@ -43,106 +73,6 @@ export class GoogleAuthService {
     });
   }
 
-  async login(): Promise<void> {
-    await this.waitForClient();
-    await this.requestToken('select_account');
-  }
-
-  async restoreSession(): Promise<void> {
-    if (typeof window === 'undefined') return;
-
-    // Google access tokens only live in memory. Do not start an OAuth popup from
-    // a route guard; Google requires a user gesture for a new token request.
-    if (!this.hasValidToken()) {
-      this.clearSession();
-    }
-  }
-
-  logout(): void {
-    const token = this.accessToken();
-    this.clearSession();
-
-    if (token && (window as any).google?.accounts?.oauth2) {
-      (window as any).google.accounts.oauth2.revoke(token, () => undefined);
-    }
-  }
-
-  getAccessToken(): string | null {
-    return this.accessToken();
-  }
-
-  private hasValidToken(): boolean {
-    return !!this.accessToken() && Date.now() < this.tokenExpiresAt;
-  }
-
-  private requestToken(prompt: 'consent' | 'select_account'): Promise<void> {
-    if (!this.tokenClient) {
-      return Promise.reject(new Error('Google Identity client is unavailable'));
-    }
-
-    if (this.pendingRequest) {
-      return Promise.reject(new Error('A Google sign-in request is already in progress'));
-    }
-
-    return new Promise((resolve, reject) => {
-      const timeoutId = window.setTimeout(() => {
-        this.pendingRequest = null;
-        reject(new Error('Google sign-in timed out. Make sure pop-ups are allowed, then try again.'));
-      }, 30000);
-
-      this.pendingRequest = { resolve, reject, timeoutId };
-      try {
-        this.tokenClient?.requestAccessToken({ prompt });
-      } catch (error) {
-        this.rejectPendingRequest(this.toError(error, 'Unable to start Google sign-in'));
-      }
-    });
-  }
-
-  private handleTokenResponse(response: google.accounts.oauth2.TokenResponse): void {
-    const pending = this.takePendingRequest();
-
-    if (response.error || !response.access_token) {
-      this.clearSession();
-      pending?.reject(new Error(response.error_description || response.error || 'Google sign-in failed'));
-      return;
-    }
-
-    this.accessToken.set(response.access_token);
-    this.tokenExpiresAt = Date.now() + Math.max(0, (response.expires_in ?? 3600) - 60) * 1000;
-    this.isSignedIn.set(true);
-    pending?.resolve();
-  }
-
-  private handleTokenError(error: google.accounts.oauth2.TokenClientError): void {
-    const message = error.type === 'popup_closed'
-      ? 'Google sign-in was cancelled.'
-      : error.type === 'popup_failed_to_open'
-        ? 'Google sign-in popup was blocked. Allow pop-ups for this site and try again.'
-        : error.message || 'Google sign-in could not be started.';
-
-    this.clearSession();
-    this.rejectPendingRequest(new Error(message));
-  }
-
-  private takePendingRequest(): PendingTokenRequest | null {
-    const pending = this.pendingRequest;
-    this.pendingRequest = null;
-    if (pending) {
-      window.clearTimeout(pending.timeoutId);
-    }
-    return pending;
-  }
-
-  private rejectPendingRequest(error: Error): void {
-    const pending = this.takePendingRequest();
-    pending?.reject(error);
-  }
-
-  private toError(error: unknown, fallback: string): Error {
-    return error instanceof Error ? error : new Error(fallback);
-  }
-
   private async waitForClient(): Promise<void> {
     if (this.tokenClient) return;
     return new Promise((resolve, reject) => {
@@ -161,9 +91,44 @@ export class GoogleAuthService {
     });
   }
 
+  private persistSession(): void {
+    if (!this.hasValidToken() || typeof window === 'undefined') {
+      return;
+    }
+
+    const session: StoredSession = {
+      accessToken: this.accessToken()!,
+      expiresAt: this.tokenExpiresAt,
+    };
+    window.sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
+  }
+
+  private readStoredSession(): StoredSession | null {
+    try {
+      const value = window.sessionStorage.getItem(SESSION_STORAGE_KEY);
+      if (!value) {
+        return null;
+      }
+
+      const session = JSON.parse(value) as Partial<StoredSession>;
+      if (typeof session.accessToken !== 'string' || !session.accessToken || typeof session.expiresAt !== 'number' || Date.now() >= session.expiresAt) {
+        window.sessionStorage.removeItem(SESSION_STORAGE_KEY);
+        return null;
+      }
+
+      return { accessToken: session.accessToken, expiresAt: session.expiresAt };
+    } catch {
+      window.sessionStorage.removeItem(SESSION_STORAGE_KEY);
+      return null;
+    }
+  }
+
   private clearSession(): void {
     this.accessToken.set(null);
     this.isSignedIn.set(false);
     this.tokenExpiresAt = 0;
+    if (typeof window !== 'undefined') {
+      window.sessionStorage.removeItem(SESSION_STORAGE_KEY);
+    }
   }
 }
