@@ -12,6 +12,15 @@ ng serve
 
 Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
 
+## Google OAuth setup
+
+The Google client ID in `src/environments/environment.ts` must be a **Web application** OAuth client in the same Google Cloud project where the Google Sheets API is enabled. In Google Cloud Console, add every app origin under **APIs & Services → Credentials → Authorized JavaScript origins**:
+
+- `http://localhost:4200` for local development
+- The production app origin, for example `https://your-app.vercel.app`
+
+Use origins only—do not include a page path or a trailing slash. While the OAuth consent screen is in testing, add each operator account as a test user. Each signed-in account also needs edit access to the shared spreadsheet.
+
 ## Code scaffolding
 
 Angular CLI includes powerful code scaffolding tools. To generate a new component, run:

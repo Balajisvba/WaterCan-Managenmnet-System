@@ -7,6 +7,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { Customer } from '../../../models/app.models';
+import { SettingsService } from '../../../services/settings.service';
 
 @Component({
   selector: 'app-customer-dialog',
@@ -60,7 +61,7 @@ import { Customer } from '../../../models/app.models';
 
         <mat-form-field appearance="outline">
           <mat-label>Initial Outstanding Cans</mat-label>
-          <input matInput type="number" formControlName="outstandingCan" min="0" />
+          <input matInput type="number" formControlName="openingOutstandingCans" min="0" />
         </mat-form-field>
 
         <mat-form-field appearance="outline">
@@ -95,6 +96,7 @@ export class CustomerDialogComponent {
   readonly dialogRef = inject(MatDialogRef<CustomerDialogComponent>);
   readonly data: Customer | null = inject(MAT_DIALOG_DATA);
   private readonly fb = inject(FormBuilder);
+  private readonly settingsService = inject(SettingsService);
 
   readonly form: FormGroup = this.fb.group({
     name: [this.data?.name || '', Validators.required],
@@ -102,8 +104,8 @@ export class CustomerDialogComponent {
     alternateMobile: [this.data?.alternateMobile || ''],
     address: [this.data?.address || '', Validators.required],
     area: [this.data?.area || '', Validators.required],
-    depositAmount: [this.data?.depositAmount ?? 500, [Validators.required, Validators.min(0)]],
-    outstandingCan: [this.data?.outstandingCan ?? 0, [Validators.required, Validators.min(0)]],
+    depositAmount: [this.data?.depositAmount ?? this.settingsService.settings().depositAmount, [Validators.required, Validators.min(0)]],
+    openingOutstandingCans: [this.data?.openingOutstandingCans ?? this.data?.outstandingCan ?? 0, [Validators.required, Validators.min(0)]],
     status: [this.data?.status || 'Active', Validators.required],
   });
 

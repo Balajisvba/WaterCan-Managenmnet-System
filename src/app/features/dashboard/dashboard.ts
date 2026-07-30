@@ -27,6 +27,7 @@ import { PaymentDialogComponent } from '../../shared/components/dialogs/payment-
 import { MissingCanDialogComponent } from '../../shared/components/dialogs/missing-can-dialog';
 import { InvoiceDialogComponent } from '../../shared/components/dialogs/invoice-dialog';
 import { Delivery } from '../../models/app.models';
+import { toDateKey, toLocalDateInputValue } from '../../utils/date-utils';
 
 @Component({
   selector: 'app-dashboard',
@@ -72,7 +73,7 @@ export class DashboardComponent {
     if (preset === 'all') {
       this.selectedDate.set('');
     } else if (preset === 'today') {
-      const todayStr = new Date().toISOString().split('T')[0];
+      const todayStr = toLocalDateInputValue(new Date());
       this.selectedDate.set(todayStr);
     }
   }
@@ -82,7 +83,7 @@ export class DashboardComponent {
       this.setPreset('all');
       return;
     }
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = toLocalDateInputValue(new Date());
     if (dateStr === todayStr) {
       this.datePreset.set('today');
     } else {
@@ -118,13 +119,13 @@ export class DashboardComponent {
     const customers = this.stateService.customers();
 
     const filteredDeliveries = deliveries.filter(
-      (d) => d.deliveryDate && d.deliveryDate.startsWith(targetDate)
+      (d) => toDateKey(d.deliveryDate) === targetDate
     );
     const filteredExpenses = expenses.filter(
-      (e) => e.date && e.date.startsWith(targetDate)
+      (e) => toDateKey(e.date) === targetDate
     );
     const filteredMissing = missing.filter(
-      (m) => m.createdAt && m.createdAt.startsWith(targetDate)
+      (m) => toDateKey(m.createdAt) === targetDate
     );
 
     const todayRevenue = filteredDeliveries.reduce((sum, d) => sum + (Number(d.totalAmount) || 0), 0);
@@ -133,7 +134,7 @@ export class DashboardComponent {
     const todayProfit = todayRevenue - todayExpenses;
 
     const outstandingCans = customers.reduce((sum, c) => sum + (Number(c.outstandingCan) || 0), 0);
-    const missingCansCount = filteredMissing.reduce((sum, m) => sum + (Number(m.missingQuantity) || 0), 0);
+    const missingCansCount = filteredMissing.reduce((sum, m) => sum + (Number(m.lostQuantity) || 0), 0);
     const activeCustomers = customers.filter((c) => c.status === 'Active').length;
     const monthlyRevenue = todayRevenue;
 
@@ -187,10 +188,14 @@ export class DashboardComponent {
 
   openNewCustomer(): void {
     const dialogRef = this.dialog.open(CustomerDialogComponent, { width: '600px' });
-    dialogRef.afterClosed().subscribe((result) => {
+    dialogRef.afterClosed().subscribe(async (result) => {
       if (result) {
-        this.customerService.add(result);
-        this.notification.success('Customer registered successfully');
+        try {
+          await this.customerService.add(result);
+          this.notification.success('Customer registered successfully');
+        } catch {
+          this.notification.error('Failed to register customer');
+        }
       }
     });
   }
@@ -200,10 +205,14 @@ export class DashboardComponent {
       width: '600px',
       data: { customers: this.stateService.customers() },
     });
-    dialogRef.afterClosed().subscribe((result) => {
+    dialogRef.afterClosed().subscribe(async (result) => {
       if (result) {
-        this.deliveryService.add(result);
-        this.notification.success('Delivery recorded successfully');
+        try {
+          await this.deliveryService.add(result);
+          this.notification.success('Delivery recorded successfully');
+        } catch {
+          this.notification.error('Failed to record delivery');
+        }
       }
     });
   }
@@ -213,20 +222,28 @@ export class DashboardComponent {
       width: '550px',
       data: { customers: this.stateService.customers() },
     });
-    dialogRef.afterClosed().subscribe((result) => {
+    dialogRef.afterClosed().subscribe(async (result) => {
       if (result) {
-        this.paymentService.add(result);
-        this.notification.success('Payment recorded successfully');
+        try {
+          await this.paymentService.add(result);
+          this.notification.success('Payment recorded successfully');
+        } catch {
+          this.notification.error('Failed to record payment');
+        }
       }
     });
   }
 
   openNewExpense(): void {
     const dialogRef = this.dialog.open(ExpenseDialogComponent, { width: '550px' });
-    dialogRef.afterClosed().subscribe((result) => {
+    dialogRef.afterClosed().subscribe(async (result) => {
       if (result) {
-        this.expenseService.add(result);
-        this.notification.success('Expense recorded successfully');
+        try {
+          await this.expenseService.add(result);
+          this.notification.success('Expense recorded successfully');
+        } catch {
+          this.notification.error('Failed to record expense');
+        }
       }
     });
   }
@@ -236,10 +253,14 @@ export class DashboardComponent {
       width: '600px',
       data: { customers: this.stateService.customers() },
     });
-    dialogRef.afterClosed().subscribe((result) => {
+    dialogRef.afterClosed().subscribe(async (result) => {
       if (result) {
-        this.missingCanService.add(result);
-        this.notification.success('Missing can entry recorded');
+        try {
+          await this.missingCanService.add(result);
+          this.notification.success('Missing can entry recorded');
+        } catch {
+          this.notification.error('Failed to record missing can');
+        }
       }
     });
   }

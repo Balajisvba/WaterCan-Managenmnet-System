@@ -1,7 +1,8 @@
 import { Customer, Delivery, Expense, MissingCan, Payment, Settings } from '../models/app.models';
 
 export function generateId(prefix: string): string {
-  return `${prefix}-${Math.random().toString(36).slice(2, 8)}-${Date.now().toString(36)}`;
+  const randomId = globalThis.crypto?.randomUUID?.().replace(/-/g, '') ?? `${Date.now().toString(36)}${Math.random().toString(36).slice(2)}`;
+  return `${prefix}-${randomId}`;
 }
 
 export function buildSeedCustomers(): Customer[] {
@@ -15,6 +16,7 @@ export function buildSeedCustomers(): Customer[] {
       address: 'Sector 15, Noida',
       area: 'Noida',
       depositAmount: 500,
+      openingOutstandingCans: 3,
       outstandingCan: 3,
       totalDelivered: 40,
       totalReturned: 8,
@@ -30,6 +32,7 @@ export function buildSeedCustomers(): Customer[] {
       address: 'Rosewood Lane',
       area: 'Gurgaon',
       depositAmount: 400,
+      openingOutstandingCans: 1,
       outstandingCan: 1,
       totalDelivered: 22,
       totalReturned: 4,
@@ -45,6 +48,7 @@ export function buildSeedCustomers(): Customer[] {
       address: 'Park Avenue',
       area: 'Delhi',
       depositAmount: 300,
+      openingOutstandingCans: 6,
       outstandingCan: 6,
       totalDelivered: 55,
       totalReturned: 12,
@@ -64,8 +68,8 @@ export function buildSeedDeliveries(): Delivery[] {
       filledCans: 2,
       emptyCans: 1,
       ratePerCan: 40,
-      totalAmount: 120,
-      paidAmount: 100,
+      totalAmount: 80,
+      paidAmount: 60,
       balance: 20,
       driverName: 'Aman',
       remarks: 'Priority delivery',

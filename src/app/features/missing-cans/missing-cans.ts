@@ -75,10 +75,14 @@ export class MissingCansComponent {
       width: '600px',
       data: { customers: this.stateService.customers() },
     });
-    dialogRef.afterClosed().subscribe((result) => {
+    dialogRef.afterClosed().subscribe(async (result) => {
       if (result) {
-        this.missingCanService.add(result);
-        this.notification.success('Missing can record created');
+        try {
+          await this.missingCanService.add(result);
+          this.notification.success('Missing can record created');
+        } catch {
+          this.notification.error('Failed to create record');
+        }
       }
     });
   }
@@ -91,10 +95,14 @@ export class MissingCansComponent {
         customers: this.stateService.customers(),
       },
     });
-    dialogRef.afterClosed().subscribe((result) => {
+    dialogRef.afterClosed().subscribe(async (result) => {
       if (result) {
-        this.missingCanService.update(result);
-        this.notification.success('Missing can record updated');
+        try {
+          await this.missingCanService.update(result);
+          this.notification.success('Missing can record updated');
+        } catch {
+          this.notification.error('Failed to update record');
+        }
       }
     });
   }
@@ -107,10 +115,14 @@ export class MissingCansComponent {
         message: `Are you sure you want to delete record ${entry.id} for ${entry.customerName}?`,
       },
     });
-    dialogRef.afterClosed().subscribe((confirmed) => {
+    dialogRef.afterClosed().subscribe(async (confirmed) => {
       if (confirmed) {
-        this.missingCanService.remove(entry.id);
-        this.notification.success('Record deleted successfully');
+        try {
+          await this.missingCanService.remove(entry.id);
+          this.notification.success('Record deleted successfully');
+        } catch {
+          this.notification.error('Failed to delete record');
+        }
       }
     });
   }

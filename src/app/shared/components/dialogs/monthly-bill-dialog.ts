@@ -10,6 +10,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatDividerModule } from '@angular/material/divider';
 import { BusinessStateService } from '../../../services/business-state.service';
 import { Customer, Delivery } from '../../../models/app.models';
+import { LocalDatePipe } from '../../pipes/local-date.pipe';
 
 export interface MonthlyBillDialogData {
   customers: Customer[];
@@ -29,6 +30,7 @@ export interface MonthlyBillDialogData {
     MatSelectModule,
     MatInputModule,
     MatDividerModule,
+    LocalDatePipe,
   ],
   template: `
     <div class="monthly-bill-container">
@@ -116,7 +118,7 @@ export interface MonthlyBillDialogData {
               <tbody>
                 @for (d of monthDeliveries(); track d.id) {
                   <tr>
-                    <td>{{ d.deliveryDate | date:'shortDate' }}</td>
+                    <td>{{ d.deliveryDate | localDate }}</td>
                     <td>{{ d.id }}</td>
                     <td class="text-center">{{ d.filledCans }}</td>
                     <td class="text-center">{{ d.emptyCans }}</td>

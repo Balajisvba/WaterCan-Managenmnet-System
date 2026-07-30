@@ -1,4 +1,4 @@
-import { Component, input, output, ViewChild, AfterViewInit, OnChanges, SimpleChanges, computed } from '@angular/core';
+import { Component, input, output, ViewChild, AfterViewInit, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
@@ -6,6 +6,7 @@ import { MatSort, MatSortModule } from '@angular/material/sort';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatChipsModule } from '@angular/material/chips';
+import { LocalDatePipe } from '../../pipes/local-date.pipe';
 
 export interface TableColumn {
   key: string;
@@ -23,7 +24,8 @@ export interface TableColumn {
     MatSortModule,
     MatButtonModule,
     MatIconModule,
-    MatChipsModule
+    MatChipsModule,
+    LocalDatePipe,
   ],
   template: `
     <div class="table-container mat-elevation-z1">
@@ -50,7 +52,7 @@ export interface TableColumn {
                 }
 
                 @case ('date') {
-                  {{ row[col.key] | date:'mediumDate' }}
+                  {{ row[col.key] | localDate }}
                 }
 
                 @case ('status') {
@@ -65,6 +67,7 @@ export interface TableColumn {
 
                     @if (showView()) {
                       <button mat-icon-button color="primary"
+                              [attr.aria-label]="'View ' + row['id']"
                               (click)="viewRow.emit(row)">
                         <mat-icon>visibility</mat-icon>
                       </button>
@@ -72,6 +75,7 @@ export interface TableColumn {
 
                     @if (showEdit()) {
                       <button mat-icon-button color="accent"
+                              [attr.aria-label]="'Edit ' + row['id']"
                               (click)="editRow.emit(row)">
                         <mat-icon>edit</mat-icon>
                       </button>
@@ -79,6 +83,7 @@ export interface TableColumn {
 
                     @if (showPrint()) {
                       <button mat-icon-button color="primary"
+                              [attr.aria-label]="'Print ' + row['id']"
                               (click)="printRow.emit(row)">
                         <mat-icon>print</mat-icon>
                       </button>
@@ -86,6 +91,7 @@ export interface TableColumn {
 
                     @if (showDelete()) {
                       <button mat-icon-button color="warn"
+                              [attr.aria-label]="'Delete ' + row['id']"
                               (click)="deleteRow.emit(row)">
                         <mat-icon>delete</mat-icon>
                       </button>
@@ -137,7 +143,7 @@ export interface TableColumn {
 
     .full-width-table{
       width:max-content;
-      min-width:1400px;
+      min-width:720px;
     }
 
     .mat-mdc-header-cell,
@@ -231,7 +237,7 @@ export interface TableColumn {
 
   `]
 })
-export class DataTableComponent<T> implements AfterViewInit, OnChanges {
+export class DataTableComponent<T> implements AfterViewInit {
   readonly data = input.required<T[]>();
   readonly columns = input.required<TableColumn[]>();
   readonly filter = input<string>('');
@@ -253,13 +259,15 @@ export class DataTableComponent<T> implements AfterViewInit, OnChanges {
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
 
-  ngOnChanges(changes: SimpleChanges): void {
-    if (changes['data'] && this.data()) {
+  constructor() {
+    effect(() => {
       this.dataSource.data = this.data();
-    }
-    if (changes['filter']) {
+      this.dataSource.paginator?.firstPage();
+    });
+    effect(() => {
       this.dataSource.filter = (this.filter() || '').trim().toLowerCase();
-    }
+      this.dataSource.paginator?.firstPage();
+    });
   }
 
   ngAfterViewInit(): void {

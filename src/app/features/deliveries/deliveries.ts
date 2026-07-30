@@ -101,7 +101,7 @@ export class DeliveriesComponent {
         d.id.toLowerCase().includes(term) ||
         (d.remarks && d.remarks.toLowerCase().includes(term));
 
-      const matchesDate = !d.deliveryDate || isDateInRange(d.deliveryDate, start, end);
+      const matchesDate = (!start && !end) || isDateInRange(d.deliveryDate, start, end);
 
       return matchesSearch && matchesDate;
     });
@@ -126,10 +126,14 @@ export class DeliveriesComponent {
       width: '600px',
       data: { customers: this.stateService.customers() },
     });
-    dialogRef.afterClosed().subscribe((result) => {
+    dialogRef.afterClosed().subscribe(async (result) => {
       if (result) {
-        this.deliveryService.add(result);
-        this.notification.success('Delivery log recorded');
+        try {
+          await this.deliveryService.add(result);
+          this.notification.success('Delivery log recorded');
+        } catch (err) {
+          this.notification.error('Failed to log delivery');
+        }
       }
     });
   }
@@ -142,10 +146,14 @@ export class DeliveriesComponent {
         customers: this.stateService.customers(),
       },
     });
-    dialogRef.afterClosed().subscribe((result) => {
+    dialogRef.afterClosed().subscribe(async (result) => {
       if (result) {
-        this.deliveryService.update(result);
-        this.notification.success('Delivery record updated');
+        try {
+          await this.deliveryService.update(result);
+          this.notification.success('Delivery record updated');
+        } catch (err) {
+          this.notification.error('Failed to update delivery');
+        }
       }
     });
   }
@@ -175,10 +183,14 @@ export class DeliveriesComponent {
         message: `Are you sure you want to delete Delivery ${delivery.id} for ${delivery.customerName}?`,
       },
     });
-    dialogRef.afterClosed().subscribe((confirmed) => {
+    dialogRef.afterClosed().subscribe(async (confirmed) => {
       if (confirmed) {
-        this.deliveryService.remove(delivery.id);
-        this.notification.success('Delivery log removed');
+        try {
+          await this.deliveryService.remove(delivery.id);
+          this.notification.success('Delivery log removed');
+        } catch (err) {
+          this.notification.error('Failed to remove delivery');
+        }
       }
     });
   }
