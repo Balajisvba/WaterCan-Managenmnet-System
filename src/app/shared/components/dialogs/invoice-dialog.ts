@@ -16,7 +16,7 @@ import { LocalDatePipe } from '../../pipes/local-date.pipe';
       <div class="invoice-header">
         <div class="company-brand">
           <h2>Dhanam Agencies</h2>
-          <p>Water Can Supply Management</p>
+          <p>Dhanam Agencies, Sethiyathope</p>
         </div>
         <div class="invoice-meta">
           <h3>INVOICE</h3>
@@ -79,7 +79,6 @@ import { LocalDatePipe } from '../../pipes/local-date.pipe';
 
       <div class="invoice-footer">
         <p>Thank you for choosing Dhanam Agencies!</p>
-        <p class="small">System generated receipt - No signature required.</p>
       </div>
     </div>
 
