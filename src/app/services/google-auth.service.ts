@@ -2,6 +2,18 @@ import { Injectable, signal } from '@angular/core';
 import { environment } from '../../environments/environment';
 
 const SCOPES = 'https://www.googleapis.com/auth/spreadsheets';
+const SESSION_STORAGE_KEY = 'aqua-track-google-session';
+
+interface PendingTokenRequest {
+  resolve: () => void;
+  reject: (error: Error) => void;
+  timeoutId: number;
+}
+
+interface StoredSession {
+  accessToken: string;
+  expiresAt: number;
+}
 
 interface PendingTokenRequest {
   resolve: () => void;
@@ -111,6 +123,79 @@ export class GoogleAuthService {
     this.accessToken.set(response.access_token);
     this.tokenExpiresAt = Date.now() + Math.max(0, (response.expires_in ?? 3600) - 60) * 1000;
     this.isSignedIn.set(true);
+    pending?.resolve();
+  }
+
+  private handleTokenError(error: google.accounts.oauth2.TokenClientError): void {
+    const message = error.type === 'popup_closed'
+      ? 'Google sign-in was cancelled.'
+      : error.type === 'popup_failed_to_open'
+        ? 'Google sign-in popup was blocked. Allow pop-ups for this site and try again.'
+        : error.message || 'Google sign-in could not be started.';
+
+    this.clearSession();
+    this.rejectPendingRequest(new Error(message));
+  }
+
+  private takePendingRequest(): PendingTokenRequest | null {
+    const pending = this.pendingRequest;
+    this.pendingRequest = null;
+    if (pending) {
+      window.clearTimeout(pending.timeoutId);
+    }
+    return pending;
+  }
+
+  private rejectPendingRequest(error: Error): void {
+    const pending = this.takePendingRequest();
+    pending?.reject(error);
+  }
+
+  private toError(error: unknown, fallback: string): Error {
+    return error instanceof Error ? error : new Error(fallback);
+  }
+
+  private hasValidToken(): boolean {
+    return !!this.accessToken() && Date.now() < this.tokenExpiresAt;
+  }
+
+  private requestToken(prompt: 'consent' | 'select_account'): Promise<void> {
+    if (!this.tokenClient) {
+      return Promise.reject(new Error('Google Identity client is unavailable'));
+    }
+
+    if (this.pendingRequest) {
+      return Promise.reject(new Error('A Google sign-in request is already in progress'));
+    }
+
+    return new Promise((resolve, reject) => {
+      const timeoutId = window.setTimeout(() => {
+        this.pendingRequest = null;
+        reject(new Error('Google sign-in timed out. Make sure pop-ups are allowed, then try again.'));
+      }, 30000);
+
+      this.pendingRequest = { resolve, reject, timeoutId };
+      try {
+        this.tokenClient?.requestAccessToken({ prompt });
+      } catch (error) {
+        this.rejectPendingRequest(this.toError(error, 'Unable to start Google sign-in'));
+      }
+    });
+  }
+
+  private handleTokenResponse(response: google.accounts.oauth2.TokenResponse): void {
+    const pending = this.takePendingRequest();
+
+    if (response.error || !response.access_token) {
+      this.clearSession();
+      pending?.reject(new Error(response.error_description || response.error || 'Google sign-in failed'));
+      return;
+    }
+
+    this.accessToken.set(response.access_token);
+    this.tokenExpiresAt = Date.now() + Math.max(0, (response.expires_in ?? 3600) - 60) * 1000;
+    this.isSignedIn.set(true);
+    this.persistSession();
     pending?.resolve();
   }
 
