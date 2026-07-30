@@ -2,31 +2,21 @@ import { Injectable, signal } from '@angular/core';
 import { Settings } from '../models/app.models';
 import { GoogleSheetService } from './google-sheet.service';
 import { buildSeedSettings } from '../utils/sample-data';
+import { normalizeSettings } from '../utils/record-normalizers';
 
 @Injectable({ providedIn: 'root' })
 export class SettingsService {
   readonly settings = signal<Settings>(buildSeedSettings());
 
-  constructor(private readonly googleSheetService: GoogleSheetService) {
-    this.load();
-  }
+  constructor(private readonly googleSheetService: GoogleSheetService) {}
 
   async load(): Promise<void> {
-    try {
-      const stored = await this.googleSheetService.read<Settings>('Settings');
-      if (stored.length > 0) {
-        this.settings.set(stored[0]);
-      } else {
-        const initial = buildSeedSettings();
-        await this.save(initial);
-      }
-    } catch {
-      this.settings.set(buildSeedSettings());
-    }
+    const stored = await this.googleSheetService.read<Settings>('Settings');
+    this.settings.set(stored.length > 0 ? normalizeSettings(stored[0]) : buildSeedSettings());
   }
 
   async save(settings: Settings): Promise<Settings> {
-    const payload = { ...settings, id: settings.id || 'S-1' };
+    const payload = normalizeSettings({ ...settings, id: settings.id || 'S-1' });
 
     try {
       const existing = await this.googleSheetService.read<Settings>('Settings');
@@ -38,8 +28,17 @@ export class SettingsService {
       this.settings.set(payload);
       return payload;
     } catch (error) {
-      this.settings.set(payload);
-      return payload;
+      throw error;
     }
+  }
+
+  async replaceAll(settings: Settings[]): Promise<void> {
+    const normalized = settings.map(normalizeSettings);
+    if (normalized.length > 1) {
+      throw new Error('Settings restore must contain at most one record');
+    }
+    const next = normalized[0] ?? buildSeedSettings();
+    await this.googleSheetService.replaceSheet('Settings', [next]);
+    this.settings.set(next);
   }
 }

@@ -1,10 +1,14 @@
-import { Injectable, computed, inject } from '@angular/core';
+import { Injectable, computed, effect, inject, signal } from '@angular/core';
+import { environment } from '../../environments/environment';
 import { Customer, DashboardSummary, Delivery, Expense, MissingCan, Payment, ReportSummary } from '../models/app.models';
+import { toDateKey } from '../utils/date-utils';
 import { CustomerService } from './customer.service';
 import { DeliveryService } from './delivery.service';
 import { ExpenseService } from './expense.service';
 import { MissingCanService } from './missing-can.service';
 import { PaymentService } from './payment.service';
+import { SettingsService } from './settings.service';
+import { GoogleAuthService } from './google-auth.service';
 
 export interface CustomerLedgerStats {
   totalDelivered: number;
@@ -13,6 +17,25 @@ export interface CustomerLedgerStats {
   totalInvoiced: number;
   totalPaid: number;
   balance: number;
+}
+
+export function calculateCustomerLedger(deliveries: Delivery[], payments: Payment[], missingCans: MissingCan[]): CustomerLedgerStats {
+  const totalDelivered = deliveries.reduce((sum, delivery) => sum + (Number(delivery.filledCans) || 0), 0);
+  const totalReturned = deliveries.reduce((sum, delivery) => sum + (Number(delivery.emptyCans) || 0), 0);
+  const totalInvoiced = deliveries.reduce((sum, delivery) => sum + (Number(delivery.totalAmount) || 0), 0);
+  const totalPaid =
+    deliveries.reduce((sum, delivery) => sum + (Number(delivery.paidAmount) || 0), 0) +
+    payments.reduce((sum, payment) => sum + (Number(payment.amount) || 0), 0);
+  const missingCanCharges = missingCans.reduce((sum, entry) => sum + (Number(entry.lossAmount) || 0), 0);
+
+  return {
+    totalDelivered,
+    totalReturned,
+    outstandingCan: 0,
+    totalInvoiced,
+    totalPaid,
+    balance: Math.max(0, totalInvoiced + missingCanCharges - totalPaid),
+  };
 }
 
 export function deriveCustomerStatus(status: string | undefined, balance: number, outstandingCan: number): Customer['status'] {
@@ -36,12 +59,65 @@ export class BusinessStateService {
   private readonly paymentService = inject(PaymentService);
   private readonly expenseService = inject(ExpenseService);
   private readonly missingCanService = inject(MissingCanService);
+  private readonly settingsService = inject(SettingsService);
+  private readonly authService = inject(GoogleAuthService);
+  private refreshInFlight: Promise<void> | null = null;
+
+  readonly isSyncing = signal(false);
+  readonly syncError = signal<string | null>(null);
+  readonly lastSyncedAt = signal<Date | null>(null);
 
   readonly rawCustomers = this.customerService.customers;
   readonly deliveries = this.deliveryService.deliveries;
   readonly payments = this.paymentService.payments;
   readonly expenses = this.expenseService.expenses;
   readonly missingCans = this.missingCanService.missingCans;
+
+  constructor() {
+    effect((onCleanup) => {
+      if (!this.authService.isSignedIn()) {
+        return;
+      }
+
+      void this.refresh();
+      const intervalId = window.setInterval(() => void this.refresh(), environment.autoRefreshInterval);
+      onCleanup(() => window.clearInterval(intervalId));
+    });
+  }
+
+  async refresh(): Promise<void> {
+    if (!this.authService.isSignedIn()) {
+      return;
+    }
+
+    if (this.refreshInFlight) {
+      return this.refreshInFlight;
+    }
+
+    this.isSyncing.set(true);
+    this.syncError.set(null);
+    this.refreshInFlight = Promise.all([
+      this.customerService.load(),
+      this.deliveryService.load(),
+      this.paymentService.load(),
+      this.expenseService.load(),
+      this.missingCanService.load(),
+      this.settingsService.load(),
+    ])
+      .then(() => {
+        this.lastSyncedAt.set(new Date());
+      })
+      .catch((error: unknown) => {
+        this.syncError.set(error instanceof Error ? error.message : 'Unable to synchronize shared data');
+        throw error;
+      })
+      .finally(() => {
+        this.isSyncing.set(false);
+        this.refreshInFlight = null;
+      });
+
+    return this.refreshInFlight;
+  }
 
   readonly customers = computed<Customer[]>(() => {
     const raw = this.rawCustomers();
@@ -54,24 +130,19 @@ export class BusinessStateService {
       const custPayments = payments.filter((p) => p.customerId === cust.id);
       const custMissing = missing.filter((m) => m.customerId === cust.id);
 
-      const totalDelivered = custDeliveries.reduce((sum, d) => sum + (Number(d.filledCans) || 0), 0);
-      const totalReturned = custDeliveries.reduce((sum, d) => sum + (Number(d.emptyCans) || 0), 0);
-
-      const missingLossCans = custMissing.reduce((sum, m) => sum + (Number(m.lostQuantity) || 0), 0);
-      const outstandingCan = Math.max(0, (cust.outstandingCan || 0) + totalDelivered - totalReturned - missingLossCans);
-
-      // Calculate total pending amount as sum of Balance Due in delivery module for this customer
-      const balance = custDeliveries.reduce(
-        (sum, d) => sum + (d.balance !== undefined && !isNaN(Number(d.balance)) ? Number(d.balance) : Math.max(0, (Number(d.totalAmount) || 0) - (Number(d.paidAmount) || 0))),
-        0
-      );
+      const ledger = calculateCustomerLedger(custDeliveries, custPayments, custMissing);
+      const missingLossCans = custMissing.reduce((sum, entry) => sum + (Number(entry.lostQuantity) || 0), 0);
+      const openingOutstandingCans = Number(cust.openingOutstandingCans ?? cust.outstandingCan) || 0;
+      const outstandingCan = Math.max(0, openingOutstandingCans + ledger.totalDelivered - ledger.totalReturned - missingLossCans);
+      const balance = ledger.balance;
 
       const derivedStatus = deriveCustomerStatus(cust.status, balance, outstandingCan);
 
       return {
         ...cust,
-        totalDelivered,
-        totalReturned,
+        openingOutstandingCans,
+        totalDelivered: ledger.totalDelivered,
+        totalReturned: ledger.totalReturned,
         outstandingCan,
         pendingAmount: balance,
         status: derivedStatus,
@@ -85,29 +156,29 @@ export class BusinessStateService {
     const expenses = this.expenses();
     const missing = this.missingCans();
 
-    const todayStr = new Date().toISOString().split('T')[0];
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
-    const todayDeliveriesList = deliveries.filter((d) => d.deliveryDate && d.deliveryDate.startsWith(todayStr));
+    const todayDeliveriesList = deliveries.filter((d) => toDateKey(d.deliveryDate) === todayStr);
     const todayRevenue = todayDeliveriesList.reduce((sum, d) => sum + (Number(d.totalAmount) || 0), 0);
 
-    const todayExpensesList = expenses.filter((e) => e.date && e.date.startsWith(todayStr));
+    const todayExpensesList = expenses.filter((e) => toDateKey(e.date) === todayStr);
     const todayExpenses = todayExpensesList.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
     const todayProfit = todayRevenue - todayExpenses;
 
     const outstandingCans = customers.reduce((sum, c) => sum + (Number(c.outstandingCan) || 0), 0);
-    const missingCansCount = missing.reduce((sum, m) => sum + (Number(m.missingQuantity) || 0), 0);
+    const missingCansCount = missing.reduce((sum, m) => sum + (Number(m.lostQuantity) || 0), 0);
     const activeCustomers = customers.filter((c) => c.status === 'Active').length;
 
-    const now = new Date();
     const currentMonthPrefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     const monthlyRevenue = deliveries
-      .filter((d) => d.deliveryDate && d.deliveryDate.startsWith(currentMonthPrefix))
+      .filter((d) => toDateKey(d.deliveryDate).startsWith(currentMonthPrefix))
       .reduce((sum, d) => sum + (Number(d.totalAmount) || 0), 0);
 
     const revenueTrend = this.buildMonthlyTrend(deliveries.map((d) => ({ date: d.deliveryDate, val: d.totalAmount })));
     const expenseTrend = this.buildMonthlyTrend(expenses.map((e) => ({ date: e.date, val: e.amount })));
     const profitTrend = this.buildMonthlyProfitTrend(deliveries, expenses);
-    const missingTrend = this.buildMonthlyTrend(missing.map((m) => ({ date: m.createdAt, val: m.missingQuantity })));
+    const missingTrend = this.buildMonthlyTrend(missing.map((m) => ({ date: m.createdAt, val: m.lostQuantity })));
 
     const recentDeliveries = [...deliveries].sort((a, b) => new Date(b.deliveryDate).getTime() - new Date(a.deliveryDate).getTime()).slice(0, 5);
 
@@ -135,45 +206,37 @@ export class BusinessStateService {
     const missing = this.missingCans();
     const payments = this.payments();
 
-    const todayStr = new Date().toISOString().split('T')[0];
     const now = new Date();
-
-    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const oneWeekAgo = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6);
+    const oneWeekAgoStr = toDateKey(oneWeekAgo);
     const currentMonthPrefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     const currentYearPrefix = `${now.getFullYear()}`;
 
     const dailyRevenue = deliveries
-      .filter((d) => d.deliveryDate && d.deliveryDate.startsWith(todayStr))
+      .filter((d) => toDateKey(d.deliveryDate) === todayStr)
       .reduce((sum, d) => sum + (Number(d.totalAmount) || 0), 0);
 
     const weeklyRevenue = deliveries
-      .filter((d) => d.deliveryDate && new Date(d.deliveryDate) >= oneWeekAgo)
+      .filter((d) => {
+        const date = toDateKey(d.deliveryDate);
+        return date >= oneWeekAgoStr && date <= todayStr;
+      })
       .reduce((sum, d) => sum + (Number(d.totalAmount) || 0), 0);
 
     const monthlyRevenue = deliveries
-      .filter((d) => d.deliveryDate && d.deliveryDate.startsWith(currentMonthPrefix))
+      .filter((d) => toDateKey(d.deliveryDate).startsWith(currentMonthPrefix))
       .reduce((sum, d) => sum + (Number(d.totalAmount) || 0), 0);
 
     const yearlyRevenue = deliveries
-      .filter((d) => d.deliveryDate && d.deliveryDate.startsWith(currentYearPrefix))
+      .filter((d) => toDateKey(d.deliveryDate).startsWith(currentYearPrefix))
       .reduce((sum, d) => sum + (Number(d.totalAmount) || 0), 0);
 
     const totalRevenue = deliveries.reduce((sum, d) => sum + (Number(d.totalAmount) || 0), 0);
     const totalExpenses = expenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
     const profit = totalRevenue - totalExpenses;
 
-    const customerOutstanding = customers.reduce((sum, c) => {
-      const custDeliveries = deliveries.filter((d) => d.customerId === c.id);
-      const custPayments = payments.filter((p) => p.customerId === c.id);
-      const custMissing = missing.filter((m) => m.customerId === c.id);
-
-      const inv = custDeliveries.reduce((s, d) => s + (Number(d.totalAmount) || 0), 0);
-      const delPay = custDeliveries.reduce((s, d) => s + (Number(d.paidAmount) || 0), 0);
-      const dirPay = custPayments.reduce((s, p) => s + (Number(p.amount) || 0), 0);
-      const loss = custMissing.reduce((s, m) => s + (Number(m.lossAmount) || 0), 0);
-
-      return sum + Math.max(0, inv + loss - (delPay + dirPay));
-    }, 0);
+    const customerOutstanding = customers.reduce((sum, customer) => sum + (Number(customer.pendingAmount) || 0), 0);
 
     const missingCanLoss = missing.reduce((sum, m) => sum + (Number(m.lossAmount) || 0), 0);
 
@@ -202,9 +265,10 @@ export class BusinessStateService {
 
     items.forEach((item) => {
       if (!item.date) return;
-      const d = new Date(item.date);
-      if (isNaN(d.getTime())) return;
-      const key = `${months[d.getMonth()]} ${d.getFullYear().toString().slice(-2)}`;
+      const dateKey = toDateKey(item.date);
+      const [year, month] = dateKey.split('-').map(Number);
+      if (!Number.isInteger(year) || !Number.isInteger(month) || month < 1 || month > 12) return;
+      const key = `${months[month - 1]} ${year.toString().slice(-2)}`;
       if (monthsMap.has(key)) {
         monthsMap.set(key, (monthsMap.get(key) || 0) + (Number(item.val) || 0));
       }

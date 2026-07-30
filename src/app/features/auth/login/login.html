@@ -24,41 +24,19 @@
         </div>
       </div>
 
-      <form [formGroup]="form" (ngSubmit)="submit()" class="login-form">
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Username</mat-label>
-          <input matInput formControlName="username" placeholder="Enter username (e.g. admin)" />
-          <mat-icon matSuffix color="primary">person</mat-icon>
-          @if (form.get('username')?.hasError('required')) {
-            <mat-error>Username is required</mat-error>
-          }
-        </mat-form-field>
-
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Password</mat-label>
-          <input matInput type="password" formControlName="password" placeholder="Enter password" />
-          <mat-icon matSuffix color="primary">lock</mat-icon>
-          @if (form.get('password')?.hasError('required')) {
-            <mat-error>Password is required</mat-error>
-          }
-        </mat-form-field>
-
-        <div class="form-options">
-          <mat-checkbox formControlName="rememberMe" color="primary">Keep session active</mat-checkbox>
-          <a href="#" (click)="$event.preventDefault()" class="forgot-link">Forgot password?</a>
-        </div>
-
-        <button mat-flat-button color="primary" class="submit-btn" type="submit" [disabled]="loading()">
+      <div class="login-form">
+        <p class="sign-in-copy">Use an account that has been granted access to the shared Dhanam Agencies spreadsheet.</p>
+        <button mat-flat-button color="primary" class="submit-btn" type="button" (click)="submit()" [disabled]="loading()">
           @if (loading()) {
             <span>Signing in with Google...</span>
           } @else {
             <span>Sign in with Google</span>
           }
         </button>
-      </form>
+      </div>
 
       <div class="login-hint">
-        <p>Use your Google account to access the Water Can Management dashboard.</p>
+        <p>Your Google session is kept only in memory and is re-verified whenever the app opens.</p>
       </div>
     </mat-card>
   </div>

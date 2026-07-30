@@ -12,6 +12,7 @@ import { ExpenseDialogComponent } from '../../shared/components/dialogs/expense-
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog';
 import { CardComponent } from '../../shared/components/card/card';
 import { Expense } from '../../models/app.models';
+import { toDateKey, toLocalDateInputValue } from '../../utils/date-utils';
 
 @Component({
   selector: 'app-expenses',
@@ -49,9 +50,9 @@ export class ExpensesComponent {
   });
 
   readonly todayTotal = computed(() => {
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = toLocalDateInputValue(new Date());
     return this.expenses()
-      .filter((e) => e.date && e.date.startsWith(todayStr))
+      .filter((e) => toDateKey(e.date) === todayStr)
       .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
   });
 
@@ -59,7 +60,7 @@ export class ExpensesComponent {
     const now = new Date();
     const prefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     return this.expenses()
-      .filter((e) => e.date && e.date.startsWith(prefix))
+      .filter((e) => toDateKey(e.date).startsWith(prefix))
       .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
   });
 
@@ -74,10 +75,14 @@ export class ExpensesComponent {
 
   openAddDialog(): void {
     const dialogRef = this.dialog.open(ExpenseDialogComponent, { width: '550px' });
-    dialogRef.afterClosed().subscribe((result) => {
+    dialogRef.afterClosed().subscribe(async (result) => {
       if (result) {
-        this.expenseService.add(result);
-        this.notification.success('Expense recorded');
+        try {
+          await this.expenseService.add(result);
+          this.notification.success('Expense recorded');
+        } catch {
+          this.notification.error('Failed to record expense');
+        }
       }
     });
   }
@@ -87,10 +92,14 @@ export class ExpensesComponent {
       width: '550px',
       data: expense,
     });
-    dialogRef.afterClosed().subscribe((result) => {
+    dialogRef.afterClosed().subscribe(async (result) => {
       if (result) {
-        this.expenseService.update(result);
-        this.notification.success('Expense updated');
+        try {
+          await this.expenseService.update(result);
+          this.notification.success('Expense updated');
+        } catch {
+          this.notification.error('Failed to update expense');
+        }
       }
     });
   }
@@ -103,10 +112,14 @@ export class ExpensesComponent {
         message: `Are you sure you want to delete Expense ${expense.id} (${expense.category}: ₹${expense.amount})?`,
       },
     });
-    dialogRef.afterClosed().subscribe((confirmed) => {
+    dialogRef.afterClosed().subscribe(async (confirmed) => {
       if (confirmed) {
-        this.expenseService.remove(expense.id);
-        this.notification.success('Expense record removed');
+        try {
+          await this.expenseService.remove(expense.id);
+          this.notification.success('Expense record removed');
+        } catch {
+          this.notification.error('Failed to remove expense');
+        }
       }
     });
   }

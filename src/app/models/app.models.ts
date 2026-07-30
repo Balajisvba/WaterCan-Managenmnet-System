@@ -6,6 +6,12 @@ export interface Customer {
   address: string;
   area: string;
   depositAmount: number;
+  /**
+   * The can balance that existed before this application's delivery history.
+   * It is persisted separately so the derived outstanding balance is never
+   * written back as a new opening balance.
+   */
+  openingOutstandingCans?: number;
   outstandingCan: number;
   totalDelivered: number;
   totalReturned: number;

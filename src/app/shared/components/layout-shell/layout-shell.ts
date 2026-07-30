@@ -10,6 +10,8 @@ import { ThemeService } from '../../../services/theme.service';
 import { GoogleAuthService } from '../../../services/google-auth.service';
 import { ExcelService } from '../../../services/excel.service';
 import { NotificationService } from '../../../services/notification.service';
+import { BusinessStateService } from '../../../services/business-state.service';
+import { GoogleSheetService } from '../../../services/google-sheet.service';
 
 @Component({
   selector: 'app-layout-shell',
@@ -34,12 +36,16 @@ export class LayoutShellComponent implements OnDestroy {
   private readonly router = inject(Router);
   private readonly excelService = inject(ExcelService);
   private readonly notification = inject(NotificationService);
+  private readonly businessState = inject(BusinessStateService);
+  private readonly googleSheetService = inject(GoogleSheetService);
 
   readonly isDarkMode = computed(() => this.themeService.theme() === 'dark');
   readonly sidenavOpen = signal(true);
   readonly isMobile = signal(false);
   readonly sidenavMode = computed(() => (this.isMobile() ? 'over' : 'side'));
   readonly showBackdrop = computed(() => this.isMobile());
+  readonly isSyncing = this.businessState.isSyncing;
+  readonly isOnline = this.googleSheetService.isOnline;
   readonly navigation = [
     { label: 'Dashboard', icon: 'dashboard', route: '/dashboard' },
     { label: 'Customers', icon: 'people', route: '/customers' },
@@ -56,6 +62,7 @@ export class LayoutShellComponent implements OnDestroy {
       this.updateViewport();
       window.addEventListener('resize', this.handleResize);
     }
+    void this.businessState.refresh().catch(() => undefined);
   }
 
   ngOnDestroy(): void {

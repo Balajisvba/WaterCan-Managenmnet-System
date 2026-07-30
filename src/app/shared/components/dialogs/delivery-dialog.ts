@@ -7,6 +7,8 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { Customer, Delivery } from '../../../models/app.models';
+import { SettingsService } from '../../../services/settings.service';
+import { toLocalDateInputValue } from '../../../utils/date-utils';
 
 export interface DeliveryDialogData {
   delivery?: Delivery;
@@ -60,6 +62,9 @@ export interface DeliveryDialogData {
         <mat-form-field appearance="outline">
           <mat-label>Paid Amount (₹)</mat-label>
           <input matInput type="number" formControlName="paidAmount" min="0" (input)="recalculate()" />
+          @if (form.get('paidAmount')?.hasError('overpaid')) {
+            <mat-error>Paid amount cannot exceed the invoice total</mat-error>
+          }
         </mat-form-field>
 
         <mat-form-field appearance="outline">
@@ -110,13 +115,14 @@ export class DeliveryDialogComponent implements OnInit {
   readonly dialogRef = inject(MatDialogRef<DeliveryDialogComponent>);
   readonly data: DeliveryDialogData = inject(MAT_DIALOG_DATA);
   private readonly fb = inject(FormBuilder);
+  private readonly settingsService = inject(SettingsService);
 
   readonly form: FormGroup = this.fb.group({
     customerId: [this.data.delivery?.customerId || '', Validators.required],
     customerName: [this.data.delivery?.customerName || '', Validators.required],
     filledCans: [this.data.delivery?.filledCans ?? 1, [Validators.required, Validators.min(1)]],
     emptyCans: [this.data.delivery?.emptyCans ?? 0, [Validators.required, Validators.min(0)]],
-    ratePerCan: [this.data.delivery?.ratePerCan ?? (this.data.defaultCanPrice || 40), [Validators.required, Validators.min(0)]],
+    ratePerCan: [this.data.delivery?.ratePerCan ?? (this.data.defaultCanPrice || this.settingsService.settings().canPrice), [Validators.required, Validators.min(0.01)]],
     totalAmount: [this.data.delivery?.totalAmount ?? 40, Validators.required],
     paidAmount: [this.data.delivery?.paidAmount ?? 0, [Validators.required, Validators.min(0)]],
     balance: [this.data.delivery?.balance ?? 40, Validators.required],
@@ -125,7 +131,7 @@ export class DeliveryDialogComponent implements OnInit {
     deliveryDate: [
       this.data.delivery?.deliveryDate
         ? this.data.delivery.deliveryDate.split('T')[0]
-        : '',
+        : toLocalDateInputValue(new Date()),
       Validators.required,
     ],
   });
@@ -148,6 +154,7 @@ export class DeliveryDialogComponent implements OnInit {
 
     const total = filled * rate;
     const balance = Math.max(0, total - paid);
+    this.updateValidationError('paidAmount', 'overpaid', paid > total);
 
     this.form.patchValue(
       {
@@ -166,5 +173,17 @@ export class DeliveryDialogComponent implements OnInit {
         ...this.form.value,
       });
     }
+  }
+
+  private updateValidationError(controlName: string, errorName: string, shouldSet: boolean): void {
+    const control = this.form.get(controlName);
+    if (!control) return;
+    const errors = { ...(control.errors ?? {}) };
+    if (shouldSet) {
+      errors[errorName] = true;
+    } else {
+      delete errors[errorName];
+    }
+    control.setErrors(Object.keys(errors).length ? errors : null);
   }
 }

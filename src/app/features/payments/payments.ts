@@ -68,10 +68,14 @@ export class PaymentsComponent {
       width: '550px',
       data: { customers: this.stateService.customers() },
     });
-    dialogRef.afterClosed().subscribe((result) => {
+    dialogRef.afterClosed().subscribe(async (result) => {
       if (result) {
-        this.paymentService.add(result);
-        this.notification.success('Customer payment recorded');
+        try {
+          await this.paymentService.add(result);
+          this.notification.success('Customer payment recorded');
+        } catch {
+          this.notification.error('Failed to record payment');
+        }
       }
     });
   }
@@ -84,10 +88,14 @@ export class PaymentsComponent {
         customers: this.stateService.customers(),
       },
     });
-    dialogRef.afterClosed().subscribe((result) => {
+    dialogRef.afterClosed().subscribe(async (result) => {
       if (result) {
-        this.paymentService.update(result);
-        this.notification.success('Payment record updated');
+        try {
+          await this.paymentService.update(result);
+          this.notification.success('Payment record updated');
+        } catch {
+          this.notification.error('Failed to update payment');
+        }
       }
     });
   }
@@ -100,10 +108,14 @@ export class PaymentsComponent {
         message: `Are you sure you want to delete Payment ${payment.id} (₹${payment.amount} from ${payment.customerName})?`,
       },
     });
-    dialogRef.afterClosed().subscribe((confirmed) => {
+    dialogRef.afterClosed().subscribe(async (confirmed) => {
       if (confirmed) {
-        this.paymentService.remove(payment.id);
-        this.notification.success('Payment record deleted');
+        try {
+          await this.paymentService.remove(payment.id);
+          this.notification.success('Payment record deleted');
+        } catch {
+          this.notification.error('Failed to delete payment');
+        }
       }
     });
   }

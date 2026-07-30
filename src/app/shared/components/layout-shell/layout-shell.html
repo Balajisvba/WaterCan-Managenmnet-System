@@ -19,7 +19,8 @@
 
     <div class="sidenav-footer">
       <div class="badge-status">
-        <span class="status-dot"></span> Offline Enterprise Active
+        <span class="status-dot" [class.offline]="!isOnline()"></span>
+        {{ isSyncing() ? 'Synchronizing shared data' : isOnline() ? 'Shared data connected' : 'Shared data unavailable' }}
       </div>
       <p>Dhanam Agencies v2.0</p>
     </div>

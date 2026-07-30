@@ -70,10 +70,14 @@ export class CustomersComponent {
 
   openAddDialog(): void {
     const dialogRef = this.dialog.open(CustomerDialogComponent, { width: '600px' });
-    dialogRef.afterClosed().subscribe((result) => {
+    dialogRef.afterClosed().subscribe(async (result) => {
       if (result) {
-        this.customerService.add(result);
-        this.notification.success('Customer registered successfully');
+        try {
+          await this.customerService.add(result);
+          this.notification.success('Customer registered successfully');
+        } catch {
+          this.notification.error('Failed to register customer');
+        }
       }
     });
   }
@@ -83,10 +87,14 @@ export class CustomersComponent {
       width: '600px',
       data: customer,
     });
-    dialogRef.afterClosed().subscribe((result) => {
+    dialogRef.afterClosed().subscribe(async (result) => {
       if (result) {
-        this.customerService.update(result);
-        this.notification.success('Customer updated successfully');
+        try {
+          await this.customerService.update(result);
+          this.notification.success('Customer updated successfully');
+        } catch {
+          this.notification.error('Failed to update customer');
+        }
       }
     });
   }
@@ -99,10 +107,14 @@ export class CustomersComponent {
         message: `Are you sure you want to delete ${customer.name}? All transaction logs will remain saved.`,
       },
     });
-    dialogRef.afterClosed().subscribe((confirmed) => {
+    dialogRef.afterClosed().subscribe(async (confirmed) => {
       if (confirmed) {
-        this.customerService.remove(customer.id);
-        this.notification.success('Customer deleted successfully');
+        try {
+          await this.customerService.remove(customer.id);
+          this.notification.success('Customer deleted successfully');
+        } catch {
+          this.notification.error('Failed to delete customer');
+        }
       }
     });
   }
