@@ -69,7 +69,7 @@ export interface MonthlyBillDialogData {
           <div class="bill-header">
             <div class="brand">
               <h2>Dhanam Agencies</h2>
-              <p>Water Can Supply Management System</p>
+              <p>Dhanam Agencies, Sethiyathope</p>
               <p class="tagline">Monthly Water Can Statement & Tax Invoice</p>
             </div>
             <div class="bill-meta">
