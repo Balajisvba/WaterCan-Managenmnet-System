@@ -16,7 +16,7 @@ export class SettingsService {
   }
 
   async save(settings: Settings): Promise<Settings> {
-    const payload = normalizeSettings({ ...settings, id: settings.id || 'S-1' });
+    const payload = normalizeSettings({ ...settings, id: settings.id || 'S-001' });
 
     try {
       const existing = await this.googleSheetService.read<Settings>('Settings');

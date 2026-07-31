@@ -17,7 +17,12 @@ export class CustomerService {
 
   async add(customer: Omit<Customer, 'id' | 'createdAt' | 'updatedAt'>): Promise<Customer> {
     const now = new Date().toISOString();
-    const entity = this.toCustomer({ ...customer, id: generateId('C'), createdAt: now, updatedAt: now });
+    const entity = this.toCustomer({
+      ...customer,
+      id: generateId('C', this.customers().map((item) => item.id)),
+      createdAt: now,
+      updatedAt: now,
+    });
     this.customers.update((list) => [entity, ...list]);
 
     try {

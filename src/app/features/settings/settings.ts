@@ -63,7 +63,7 @@ export class SettingsComponent {
     const value = this.form.value;
     const existing = this.settingsService.settings();
     const settingsEntity: Settings = {
-      id: existing.id ?? 'S-1',
+      id: existing.id ?? 'S-001',
       companyName: value.companyName,
       companyLogo: '',
       canPrice: Number(value.canPrice),
