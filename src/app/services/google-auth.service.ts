@@ -2,11 +2,17 @@ import { Injectable, signal } from '@angular/core';
 import { environment } from '../../environments/environment';
 
 const SCOPES = 'https://www.googleapis.com/auth/spreadsheets';
+const SESSION_STORAGE_KEY = 'aqua-track-google-session';
 
 interface PendingTokenRequest {
   resolve: () => void;
   reject: (error: Error) => void;
   timeoutId: number;
+}
+
+interface StoredSession {
+  accessToken: string;
+  expiresAt: number;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -24,6 +30,42 @@ export class GoogleAuthService {
       this.pollForGoogleClient();
       this.loadSession();
     }
+  }
+
+  async login(): Promise<void> {
+    await this.waitForClient();
+    await this.requestToken('select_account');
+  }
+
+  async restoreSession(): Promise<void> {
+    if (typeof window === 'undefined') return;
+
+    if (this.hasValidToken()) {
+      return;
+    }
+
+    const storedSession = this.readStoredSession();
+    if (storedSession) {
+      this.accessToken.set(storedSession.accessToken);
+      this.tokenExpiresAt = storedSession.expiresAt;
+      this.isSignedIn.set(true);
+      return;
+    }
+
+    this.clearSession();
+  }
+
+  logout(): void {
+    const token = this.accessToken();
+    this.clearSession();
+
+    if (token && (window as any).google?.accounts?.oauth2) {
+      (window as any).google.accounts.oauth2.revoke(token, () => undefined);
+    }
+  }
+
+  getAccessToken(): string | null {
+    return this.accessToken();
   }
 
   private pollForGoogleClient(): void {
@@ -44,32 +86,6 @@ export class GoogleAuthService {
       callback: (response: google.accounts.oauth2.TokenResponse) => this.handleTokenResponse(response),
       error_callback: (error: google.accounts.oauth2.TokenClientError) => this.handleTokenError(error),
     });
-  }
-
-  async login(): Promise<void> {
-    await this.waitForClient();
-    await this.requestToken('select_account');
-  }
-
-  async restoreSession(): Promise<void> {
-    if (typeof window === 'undefined') return;
-
-    if (!this.hasValidToken()) {
-      this.clearSession();
-    }
-  }
-
-  logout(): void {
-    const token = this.accessToken();
-    this.clearSession();
-
-    if (token && (window as any).google?.accounts?.oauth2) {
-      (window as any).google.accounts.oauth2.revoke(token, () => undefined);
-    }
-  }
-
-  getAccessToken(): string | null {
-    return this.accessToken();
   }
 
   private hasValidToken(): boolean {
@@ -164,33 +180,44 @@ export class GoogleAuthService {
     });
   }
 
+  private persistSession(): void {
+    if (!this.hasValidToken() || typeof window === 'undefined') {
+      return;
+    }
+
+    const session: StoredSession = {
+      accessToken: this.accessToken()!,
+      expiresAt: this.tokenExpiresAt,
+    };
+    window.sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
+  }
+
+  private readStoredSession(): StoredSession | null {
+    try {
+      const value = window.sessionStorage.getItem(SESSION_STORAGE_KEY);
+      if (!value) {
+        return null;
+      }
+
+      const session = JSON.parse(value) as Partial<StoredSession>;
+      if (typeof session.accessToken !== 'string' || !session.accessToken || typeof session.expiresAt !== 'number' || Date.now() >= session.expiresAt) {
+        window.sessionStorage.removeItem(SESSION_STORAGE_KEY);
+        return null;
+      }
+
+      return { accessToken: session.accessToken, expiresAt: session.expiresAt };
+    } catch {
+      window.sessionStorage.removeItem(SESSION_STORAGE_KEY);
+      return null;
+    }
+  }
+
   private clearSession(): void {
     this.accessToken.set(null);
     this.isSignedIn.set(false);
     this.tokenExpiresAt = 0;
-    localStorage.removeItem(this.storageKey);
-    localStorage.removeItem(this.expiryKey);
-  }
-
-  private persistSession(): void {
-    if (this.accessToken()) {
-      localStorage.setItem(this.storageKey, this.accessToken() as string);
-      localStorage.setItem(this.expiryKey, this.tokenExpiresAt.toString());
-    }
-  }
-
-  private loadSession(): void {
-    const token = localStorage.getItem(this.storageKey);
-    const expiry = localStorage.getItem(this.expiryKey);
-    if (token && expiry) {
-      const expiresAt = Number(expiry);
-      if (Date.now() < expiresAt) {
-        this.accessToken.set(token);
-        this.tokenExpiresAt = expiresAt;
-        this.isSignedIn.set(true);
-      } else {
-        this.clearSession();
-      }
+    if (typeof window !== 'undefined') {
+      window.sessionStorage.removeItem(SESSION_STORAGE_KEY);
     }
   }
 }
