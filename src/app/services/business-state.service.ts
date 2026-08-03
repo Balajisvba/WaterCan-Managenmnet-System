@@ -17,6 +17,8 @@ export interface CustomerLedgerStats {
   totalInvoiced: number;
   totalPaid: number;
   balance: number;
+  balanceDue: number;
+  advanceAmount: number;
 }
 
 export function calculateCustomerLedger(deliveries: Delivery[], payments: Payment[], missingCans: MissingCan[]): CustomerLedgerStats {
@@ -27,6 +29,9 @@ export function calculateCustomerLedger(deliveries: Delivery[], payments: Paymen
     deliveries.reduce((sum, delivery) => sum + (Number(delivery.paidAmount) || 0), 0) +
     payments.reduce((sum, payment) => sum + (Number(payment.amount) || 0), 0);
   const missingCanCharges = missingCans.reduce((sum, entry) => sum + (Number(entry.lossAmount) || 0), 0);
+  const netBalance = totalInvoiced + missingCanCharges - totalPaid;
+  const balanceDue = netBalance > 0 ? netBalance : 0;
+  const advanceAmount = netBalance < 0 ? Math.abs(netBalance) : 0;
 
   return {
     totalDelivered,
@@ -35,6 +40,8 @@ export function calculateCustomerLedger(deliveries: Delivery[], payments: Paymen
     totalInvoiced,
     totalPaid,
     balance: Math.max(0, totalInvoiced + missingCanCharges - totalPaid),
+    balanceDue,
+    advanceAmount,
   };
 }
 
@@ -134,7 +141,7 @@ export class BusinessStateService {
       const missingLossCans = custMissing.reduce((sum, entry) => sum + (Number(entry.lostQuantity) || 0), 0);
       const openingOutstandingCans = Number(cust.openingOutstandingCans ?? cust.outstandingCan) || 0;
       const outstandingCan = Math.max(0, openingOutstandingCans + ledger.totalDelivered - ledger.totalReturned - missingLossCans);
-      const balance = ledger.balance;
+      const balance = ledger.balanceDue;
 
       const derivedStatus = deriveCustomerStatus(cust.status, balance, outstandingCan);
 
@@ -144,7 +151,9 @@ export class BusinessStateService {
         totalDelivered: ledger.totalDelivered,
         totalReturned: ledger.totalReturned,
         outstandingCan,
-        pendingAmount: balance,
+        pendingAmount: ledger.balanceDue,
+        balanceDue: ledger.balanceDue,
+        advanceAmount: ledger.advanceAmount,
         status: derivedStatus,
       };
     });
@@ -236,7 +245,7 @@ export class BusinessStateService {
     const totalExpenses = expenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
     const profit = totalRevenue - totalExpenses;
 
-    const customerOutstanding = customers.reduce((sum, customer) => sum + (Number(customer.pendingAmount) || 0), 0);
+    const customerOutstanding = customers.reduce((sum, customer) => sum + (Number(customer.balanceDue ?? customer.pendingAmount) || 0), 0);
 
     const missingCanLoss = missing.reduce((sum, m) => sum + (Number(m.lossAmount) || 0), 0);
 

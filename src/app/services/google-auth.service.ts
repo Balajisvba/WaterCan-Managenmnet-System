@@ -22,20 +22,34 @@ export class GoogleAuthService {
   private tokenClient: google.accounts.oauth2.TokenClient | null = null;
   private pendingRequest: PendingTokenRequest | null = null;
   private tokenExpiresAt = 0;
+  private googleClientPromise: Promise<void> | null = null;
+  private readonly storageKey = 'google-auth-token';
+  private readonly expiryKey = 'google-auth-expiry';
+  private refreshTimeoutId: number | null = null;
 
   constructor() {
     if (typeof window !== 'undefined') {
+      void this.ensureGoogleClient()
+        .then(() => {
+          // load any stored session after the client is initialized
+          this.loadSession();
+        })
+        .catch(() => {
+          // ignore load failures here; login will surface errors
+        });
       this.pollForGoogleClient();
     }
   }
 
   async login(): Promise<void> {
-    await this.waitForClient();
+    await this.ensureGoogleClient();
     await this.requestToken('select_account');
   }
 
   async restoreSession(): Promise<void> {
     if (typeof window === 'undefined') return;
+
+    await this.ensureGoogleClient();
 
     if (this.hasValidToken()) {
       return;
@@ -65,24 +79,116 @@ export class GoogleAuthService {
     return this.accessToken();
   }
 
-  private pollForGoogleClient(): void {
-    const interval = window.setInterval(() => {
-      if ((window as any).google?.accounts?.oauth2) {
-        window.clearInterval(interval);
-        this.initClient();
+  private ensureGoogleClient(): Promise<void> {
+    if (this.tokenClient) {
+      return Promise.resolve();
+    }
+
+    if (this.googleClientPromise) {
+      return this.googleClientPromise;
+    }
+
+    this.googleClientPromise = new Promise((resolve, reject) => {
+      if (typeof window === 'undefined') {
+        reject(new Error('Google authentication is unavailable outside the browser'));
+        return;
       }
-    }, 100);
+
+      const googleAuth = (window as any).google?.accounts?.oauth2;
+      if (googleAuth?.initTokenClient) {
+        this.initClient();
+        resolve();
+        return;
+      }
+
+      const scriptId = 'google-gsi-script';
+      const existingScript = document.getElementById(scriptId) as HTMLScriptElement | null;
+      const finish = (error?: Error) => {
+        if (error) {
+          reject(error);
+          return;
+        }
+        resolve();
+      };
+
+      const onLoaded = () => {
+        const readyAuth = (window as any).google?.accounts?.oauth2;
+        if (readyAuth?.initTokenClient) {
+          this.initClient();
+          finish();
+          return;
+        }
+        finish(new Error('Google Identity Services loaded but the token client is not available.'));
+      };
+
+      if (existingScript) {
+        if (existingScript.dataset['loaded'] === 'true') {
+          onLoaded();
+        } else {
+          existingScript.addEventListener('load', () => {
+            existingScript.dataset['loaded'] = 'true';
+            onLoaded();
+          }, { once: true });
+          existingScript.addEventListener('error', () => {
+            finish(new Error('Failed to load Google Identity Services. Check your network connection and browser settings.'));
+          }, { once: true });
+        }
+        return;
+      }
+
+      const script = document.createElement('script');
+      script.id = scriptId;
+      script.src = 'https://accounts.google.com/gsi/client';
+      script.async = true;
+      script.defer = true;
+      script.onload = () => {
+        script.dataset['loaded'] = 'true';
+        onLoaded();
+      };
+      script.onerror = () => {
+        finish(new Error('Failed to load Google Identity Services. Check your network connection and browser settings.'));
+      };
+      document.head.appendChild(script);
+    });
+
+    return this.googleClientPromise;
   }
 
   private initClient(): void {
     if (this.tokenClient) return;
 
-    this.tokenClient = (window as any).google.accounts.oauth2.initTokenClient({
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const googleAuth = (window as any).google?.accounts?.oauth2;
+    if (!googleAuth?.initTokenClient) {
+      throw new Error('Google Identity Services is not available.');
+    }
+
+    this.tokenClient = googleAuth.initTokenClient({
       client_id: environment.googleClientId,
       scope: SCOPES,
       callback: (response: google.accounts.oauth2.TokenResponse) => this.handleTokenResponse(response),
       error_callback: (error: google.accounts.oauth2.TokenClientError) => this.handleTokenError(error),
     });
+  }
+
+  private loadSession(): void {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const stored = this.readStoredSession();
+    if (stored) {
+      this.accessToken.set(stored.accessToken);
+      this.tokenExpiresAt = stored.expiresAt;
+      this.isSignedIn.set(true);
+    }
+  }
+
+  private pollForGoogleClient(): void {
+    void this.ensureGoogleClient();
   }
 
   private hasValidToken(): boolean {
@@ -126,7 +232,48 @@ export class GoogleAuthService {
     this.tokenExpiresAt = Date.now() + Math.max(0, (response.expires_in ?? 3600) - 60) * 1000;
     this.isSignedIn.set(true);
     this.persistSession();
+    this.scheduleRefresh();
     pending?.resolve();
+  }
+
+  private scheduleRefresh(): void {
+    if (this.refreshTimeoutId) {
+      window.clearTimeout(this.refreshTimeoutId);
+      this.refreshTimeoutId = null;
+    }
+
+    const msUntilExpiry = this.tokenExpiresAt - Date.now();
+    // refresh one minute before expiry
+    const refreshIn = Math.max(0, msUntilExpiry - 60 * 1000);
+    if (refreshIn <= 0) {
+      // token already near expiry — try a silent refresh immediately
+      void this.silentRefresh();
+      return;
+    }
+
+    this.refreshTimeoutId = window.setTimeout(() => {
+      void this.silentRefresh();
+    }, refreshIn);
+  }
+
+  private async silentRefresh(): Promise<void> {
+    if (!this.tokenClient) {
+      try {
+        await this.waitForClient();
+      } catch {
+        this.clearSession();
+        return;
+      }
+    }
+
+    try {
+      // Request a new token without prompting the user. The token client will
+      // return without UI if a session is available.
+      this.tokenClient?.requestAccessToken({});
+    } catch (err) {
+      // If silent refresh fails, clear stored session to ensure a consistent state.
+      this.clearSession();
+    }
   }
 
   private handleTokenError(error: google.accounts.oauth2.TokenClientError): void {
@@ -159,6 +306,7 @@ export class GoogleAuthService {
   }
 
   private async waitForClient(): Promise<void> {
+    await this.ensureGoogleClient();
     if (this.tokenClient) return;
     return new Promise((resolve, reject) => {
       const timeout = window.setTimeout(() => {
@@ -185,25 +333,26 @@ export class GoogleAuthService {
       accessToken: this.accessToken()!,
       expiresAt: this.tokenExpiresAt,
     };
-    window.sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
+    // Use localStorage so the session survives page refreshes.
+    window.localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
   }
 
   private readStoredSession(): StoredSession | null {
     try {
-      const value = window.sessionStorage.getItem(SESSION_STORAGE_KEY);
+      const value = window.localStorage.getItem(SESSION_STORAGE_KEY);
       if (!value) {
         return null;
       }
 
       const session = JSON.parse(value) as Partial<StoredSession>;
       if (typeof session.accessToken !== 'string' || !session.accessToken || typeof session.expiresAt !== 'number' || Date.now() >= session.expiresAt) {
-        window.sessionStorage.removeItem(SESSION_STORAGE_KEY);
+        window.localStorage.removeItem(SESSION_STORAGE_KEY);
         return null;
       }
 
       return { accessToken: session.accessToken, expiresAt: session.expiresAt };
     } catch {
-      window.sessionStorage.removeItem(SESSION_STORAGE_KEY);
+      window.localStorage.removeItem(SESSION_STORAGE_KEY);
       return null;
     }
   }
@@ -213,7 +362,7 @@ export class GoogleAuthService {
     this.isSignedIn.set(false);
     this.tokenExpiresAt = 0;
     if (typeof window !== 'undefined') {
-      window.sessionStorage.removeItem(SESSION_STORAGE_KEY);
+      window.localStorage.removeItem(SESSION_STORAGE_KEY);
     }
   }
 }

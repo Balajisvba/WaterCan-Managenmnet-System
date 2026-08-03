@@ -1,0 +1,8 @@
+/* Minimal styles for monthly delivery reports */
+.page-container { padding: 16px; }
+.page-header { display:flex; gap:16px; align-items:center; margin-bottom:16px; }
+.summary-grid { display:flex; gap:12px; margin-bottom:16px; }
+.customer-month-summary { display:flex; gap:20px; align-items:center; }
+.delivery-table-card .table-scroll { overflow:auto; }
+.table-scroll table { width:100%; border-collapse:collapse; }
+.table-scroll th, .table-scroll td { padding:8px; border-bottom:1px solid #eee; }
