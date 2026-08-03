@@ -2,8 +2,16 @@
   <header class="page-header">
     <div>
       <h2>Monthly Delivery Reports</h2>
-      <p>Delivery cans and customer invoices for {{ monthLabel }}.</p>
+      <p>Delivery cans and customer invoices for {{ monthLabel() }}.</p>
     </div>
+    <mat-form-field appearance="outline" class="month-select">
+      <mat-label>Month</mat-label>
+      <mat-select [ngModel]="selectedMonthKey()" (ngModelChange)="selectedMonthKey.set($event)">
+        @for (monthKey of monthOptions(); track monthKey) {
+          <mat-option [value]="monthKey">{{ formatMonthLabel(monthKey) }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
     <button mat-flat-button color="primary" (click)="downloadExcel()">
       <mat-icon>table_view</mat-icon>
       Download This Month's Excel
@@ -39,7 +47,7 @@
       <div>
         <h3>Customer Monthly Invoice</h3>
         <p>
-          Select a customer to see their {{ monthLabel }} delivery total and download the PDF
+          Select a customer to see their {{ monthLabel() }} delivery total and download the PDF
           invoice.
         </p>
       </div>

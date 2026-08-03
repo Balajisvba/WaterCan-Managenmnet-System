@@ -16,10 +16,13 @@ export class GoogleAuthService {
   private tokenClient: google.accounts.oauth2.TokenClient | null = null;
   private pendingRequest: PendingTokenRequest | null = null;
   private tokenExpiresAt = 0;
+  private readonly storageKey = 'google-auth-token';
+  private readonly expiryKey = 'google-auth-expiry';
 
   constructor() {
     if (typeof window !== 'undefined') {
       this.pollForGoogleClient();
+      this.loadSession();
     }
   }
 
@@ -51,8 +54,6 @@ export class GoogleAuthService {
   async restoreSession(): Promise<void> {
     if (typeof window === 'undefined') return;
 
-    // Google access tokens only live in memory. Do not start an OAuth popup from
-    // a route guard; Google requires a user gesture for a new token request.
     if (!this.hasValidToken()) {
       this.clearSession();
     }
@@ -81,7 +82,7 @@ export class GoogleAuthService {
     }
 
     if (this.pendingRequest) {
-      return Promise.reject(new Error('A Google sign-in request is already in progress'));
+      this.rejectPendingRequest(new Error('Previous request cancelled'));
     }
 
     return new Promise((resolve, reject) => {
@@ -111,6 +112,7 @@ export class GoogleAuthService {
     this.accessToken.set(response.access_token);
     this.tokenExpiresAt = Date.now() + Math.max(0, (response.expires_in ?? 3600) - 60) * 1000;
     this.isSignedIn.set(true);
+    this.persistSession();
     pending?.resolve();
   }
 
@@ -146,11 +148,12 @@ export class GoogleAuthService {
   private async waitForClient(): Promise<void> {
     if (this.tokenClient) return;
     return new Promise((resolve, reject) => {
+      let poller: number;
       const timeout = window.setTimeout(() => {
         window.clearInterval(poller);
         reject(new Error('Google Identity client failed to load'));
       }, 30000);
-      const poller = window.setInterval(() => {
+      poller = window.setInterval(() => {
         if ((window as any).google?.accounts?.oauth2) {
           window.clearInterval(poller);
           window.clearTimeout(timeout);
@@ -165,5 +168,29 @@ export class GoogleAuthService {
     this.accessToken.set(null);
     this.isSignedIn.set(false);
     this.tokenExpiresAt = 0;
+    localStorage.removeItem(this.storageKey);
+    localStorage.removeItem(this.expiryKey);
+  }
+
+  private persistSession(): void {
+    if (this.accessToken()) {
+      localStorage.setItem(this.storageKey, this.accessToken() as string);
+      localStorage.setItem(this.expiryKey, this.tokenExpiresAt.toString());
+    }
+  }
+
+  private loadSession(): void {
+    const token = localStorage.getItem(this.storageKey);
+    const expiry = localStorage.getItem(this.expiryKey);
+    if (token && expiry) {
+      const expiresAt = Number(expiry);
+      if (Date.now() < expiresAt) {
+        this.accessToken.set(token);
+        this.tokenExpiresAt = expiresAt;
+        this.isSignedIn.set(true);
+      } else {
+        this.clearSession();
+      }
+    }
   }
 }

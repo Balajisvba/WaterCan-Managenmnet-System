@@ -1,13 +1,16 @@
 import { Injectable } from '@angular/core';
 import { jsPDF } from 'jspdf';
-import { Customer, Delivery } from '../models/app.models';
+import { Customer, Delivery, MissingCan, Payment } from '../models/app.models';
 import { formatMonthLabel, summarizeDeliveries } from '../utils/monthly-delivery-utils';
 import { toDateKey } from '../utils/date-utils';
+import { calculateCustomerLedger } from './business-state.service';
 
 export interface MonthlyCustomerInvoiceInput {
   companyName: string;
   customer: Customer;
   deliveries: Delivery[];
+  payments?: Payment[];
+  missingCans?: MissingCan[];
   monthKey: string;
 }
 
@@ -59,11 +62,11 @@ export class MonthlyCustomerInvoicePdfService {
       }
     }
 
-    if (y + 40 > pageHeight - 18) {
+    if (y + 45 > pageHeight - 18) {
       document.addPage();
       y = 18;
     }
-    this.drawTotals(document, summary, margin, y + 5, contentWidth);
+    this.drawTotals(document, input, summary, margin, y + 5, contentWidth);
     this.drawFooters(document, input.companyName, pageWidth, pageHeight);
 
     document.save(`monthly-delivery-invoice-${input.customer.id}-${input.monthKey}.pdf`);
@@ -199,27 +202,53 @@ export class MonthlyCustomerInvoicePdfService {
 
   private drawTotals(
     document: jsPDF,
+    input: MonthlyCustomerInvoiceInput,
     summary: ReturnType<typeof summarizeDeliveries>,
     margin: number,
     y: number,
     width: number,
   ): void {
-    const boxWidth = 82;
+    const boxWidth = 90;
     const x = margin + width - boxWidth;
-    document.setFillColor(248, 250, 252);
-    document.setDrawColor(148, 163, 184);
-    document.roundedRect(x, y, boxWidth, 32, 2, 2, 'FD');
-    const rows = [
-      ['Monthly invoiced', this.currency(summary.totalInvoiced)],
-      ['Amount paid', this.currency(summary.totalPaid)],
-      ['Balance due', this.currency(summary.totalBalance)],
+
+    let totalPaid = summary.totalPaid;
+    let balanceDue = input.customer.balanceDue ?? input.customer.pendingAmount ?? 0;
+    let advanceAmount = input.customer.advanceAmount ?? 0;
+
+    if (input.payments !== undefined) {
+      const ledger = calculateCustomerLedger(input.deliveries, input.payments, input.missingCans || []);
+      totalPaid = ledger.totalPaid;
+      balanceDue = ledger.balanceDue;
+      advanceAmount = ledger.advanceAmount;
+    }
+
+    const rows: Array<[string, string, boolean]> = [
+      ['Delivery Total', this.currency(summary.totalInvoiced), false],
+      ['Payment Total', this.currency(totalPaid), false],
+      ['Current Balance Due', this.currency(balanceDue), true],
     ];
 
+    if (advanceAmount > 0) {
+      rows.push(['Advance Balance', this.currency(advanceAmount), true]);
+    }
+
+    const boxHeight = 8 + rows.length * 8;
+
+    document.setFillColor(248, 250, 252);
+    document.setDrawColor(148, 163, 184);
+    document.roundedRect(x, y, boxWidth, boxHeight, 2, 2, 'FD');
+
     document.setFontSize(8.5);
-    rows.forEach(([label, value], index) => {
-      const rowY = y + 8 + index * 8;
-      document.setFont('helvetica', index === 2 ? 'bold' : 'normal');
-      document.setTextColor(index === 2 ? 185 : 51, index === 2 ? 28 : 65, index === 2 ? 28 : 85);
+    rows.forEach(([label, value, isBold], index) => {
+      const rowY = y + 7 + index * 8;
+      document.setFont('helvetica', isBold ? 'bold' : 'normal');
+      if (label === 'Advance Balance') {
+        document.setTextColor(46, 125, 50); // Green for advance
+      } else if (label === 'Current Balance Due') {
+        document.setTextColor(balanceDue > 0 ? 185 : 30, balanceDue > 0 ? 28 : 41, balanceDue > 0 ? 28 : 59);
+      } else {
+        document.setTextColor(51, 65, 85);
+      }
       document.text(label, x + 4, rowY);
       document.text(value, x + boxWidth - 4, rowY, { align: 'right' });
     });

@@ -27,13 +27,18 @@ export interface PaymentDialogData {
           <mat-select formControlName="customerId" (selectionChange)="onCustomerSelect($event.value)">
             @for (cust of data.customers; track cust.id) {
               <mat-option [value]="cust.id">
-                {{ cust.name }} (Ledger: ₹{{ cust.depositAmount }})
+                {{ cust.name }} (Due: ₹{{ cust.balanceDue ?? cust.pendingAmount ?? 0 }})
               </mat-option>
             }
           </mat-select>
           @if (form.get('customerId')?.hasError('required')) {
             <mat-error>Customer selection is required</mat-error>
           }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Old / Pending Amount (₹)</mat-label>
+          <input matInput type="number" formControlName="oldAmount" readonly style="color: #d32f2f; font-weight: 600;" />
         </mat-form-field>
 
         <mat-form-field appearance="outline">
@@ -44,7 +49,7 @@ export interface PaymentDialogData {
           }
         </mat-form-field>
 
-        <mat-form-field appearance="outline">
+        <mat-form-field appearance="outline" class="full-width">
           <mat-label>Payment Date</mat-label>
           <input matInput type="date" formControlName="paymentDate" />
         </mat-form-field>
@@ -81,6 +86,9 @@ export class PaymentDialogComponent {
   readonly form: FormGroup = this.fb.group({
     customerId: [this.data.payment?.customerId || '', Validators.required],
     customerName: [this.data.payment?.customerName || '', Validators.required],
+    oldAmount: [
+      this.getInitialPendingAmount(this.data.payment?.customerId),
+    ],
     amount: [this.data.payment?.amount ?? 0, [Validators.required, Validators.min(1)]],
     paymentDate: [
       this.data.payment?.paymentDate
@@ -91,18 +99,28 @@ export class PaymentDialogComponent {
     remarks: [this.data.payment?.remarks || ''],
   });
 
+  private getInitialPendingAmount(customerId?: string): number {
+    if (!customerId) return 0;
+    const cust = this.data.customers.find((c) => c.id === customerId);
+    return cust ? (cust.balanceDue ?? cust.pendingAmount ?? 0) : 0;
+  }
+
   onCustomerSelect(customerId: string): void {
     const cust = this.data.customers.find((c) => c.id === customerId);
     if (cust) {
-      this.form.patchValue({ customerName: cust.name });
+      this.form.patchValue({
+        customerName: cust.name,
+        oldAmount: cust.balanceDue ?? cust.pendingAmount ?? 0,
+      });
     }
   }
 
   onSave(): void {
     if (this.form.valid) {
+      const { oldAmount, ...paymentData } = this.form.value;
       this.dialogRef.close({
         ...this.data.payment,
-        ...this.form.value,
+        ...paymentData,
       });
     }
   }

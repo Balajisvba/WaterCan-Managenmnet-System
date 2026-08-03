@@ -95,7 +95,10 @@ export interface MonthlyBillDialogData {
               <h4>Security & Deposit Info:</h4>
               <p><strong>Security Deposit:</strong> ₹{{ selectedCustomer()?.depositAmount || 0 }}</p>
               <p><strong>Current Outstanding Cans:</strong> {{ selectedCustomer()?.outstandingCan || 0 }} Cans</p>
-              <p><strong>Total Account Balance Due:</strong> <span class="highlight-balance">₹{{ selectedCustomer()?.pendingAmount || 0 }}</span></p>
+              <p><strong>Total Account Balance Due:</strong> <span class="highlight-balance">₹{{ selectedCustomer()?.balanceDue ?? selectedCustomer()?.pendingAmount ?? 0 }}</span></p>
+              @if ((selectedCustomer()?.advanceAmount || 0) > 0) {
+                <p><strong>Customer Advance Balance:</strong> <span class="highlight-advance" style="color: #2e7d32; font-weight: 700;">₹{{ selectedCustomer()?.advanceAmount }}</span></p>
+              }
             </div>
           </div>
 
@@ -162,9 +165,15 @@ export interface MonthlyBillDialogData {
               </div>
               <mat-divider></mat-divider>
               <div class="sum-row grand-total">
-                <span>Total Account Balance Payable:</span>
-                <strong>₹{{ selectedCustomer()?.pendingAmount || 0 | number:'1.0-2' }}</strong>
+                <span>Total Account Balance Due:</span>
+                <strong>₹{{ selectedCustomer()?.balanceDue ?? selectedCustomer()?.pendingAmount ?? 0 | number:'1.0-2' }}</strong>
               </div>
+              @if ((selectedCustomer()?.advanceAmount || 0) > 0) {
+                <div class="sum-row advance-total" style="color: #2e7d32; font-weight: 700; padding-top: 4px;">
+                  <span>Customer Advance Balance:</span>
+                  <strong>₹{{ selectedCustomer()?.advanceAmount || 0 | number:'1.0-2' }}</strong>
+                </div>
+              }
             </div>
           </div>
 

@@ -10,6 +10,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { BusinessStateService } from '../../services/business-state.service';
 import { MonthlyCustomerInvoicePdfService } from '../../services/monthly-customer-invoice-pdf.service';
 import { MonthlyDeliveryExcelService } from '../../services/monthly-delivery-excel.service';
+import { toDateKey } from '../../utils/date-utils';
 import { NotificationService } from '../../services/notification.service';
 import { SettingsService } from '../../services/settings.service';
 import {
@@ -42,8 +43,20 @@ export class MonthlyDeliveryReportsComponent {
   private readonly invoicePdfService = inject(MonthlyCustomerInvoicePdfService);
   private readonly notification = inject(NotificationService);
 
-  readonly monthKey = currentMonthKey();
-  readonly monthLabel = formatMonthLabel(this.monthKey);
+  readonly selectedMonthKey = signal(currentMonthKey());
+  readonly monthLabel = computed(() => formatMonthLabel(this.selectedMonthKey()));
+  // expose utility to template
+  readonly formatMonthLabel = formatMonthLabel;
+  // generate month options for the selector (last 12 months)
+  readonly monthOptions = computed(() => {
+    const options: string[] = [];
+    const now = new Date();
+    for (let i = 0; i < 12; i++) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      options.push(currentMonthKey(date));
+    }
+    return options.reverse();
+  });
   readonly selectedCustomerId = signal('');
   readonly customers = computed(() =>
     [...this.stateService.customers()].sort((first, second) =>
@@ -51,7 +64,7 @@ export class MonthlyDeliveryReportsComponent {
     ),
   );
   readonly monthlyDeliveries = computed(() =>
-    deliveriesForMonth(this.stateService.deliveries(), this.monthKey),
+    deliveriesForMonth(this.stateService.deliveries(), this.selectedMonthKey()),
   );
   readonly monthlySummary = computed(() => summarizeDeliveries(this.monthlyDeliveries()));
   readonly selectedCustomer = computed(() =>
@@ -59,8 +72,13 @@ export class MonthlyDeliveryReportsComponent {
   );
   readonly selectedCustomerDeliveries = computed(() => {
     const customerId = this.selectedCustomerId();
-    return customerId
-      ? this.monthlyDeliveries().filter((delivery) => delivery.customerId === customerId)
+    const monthKey = this.selectedMonthKey();
+    return customerId && monthKey
+      ? this.stateService.deliveries()
+          .filter((delivery) =>
+            delivery.customerId === customerId &&
+            toDateKey(delivery.deliveryDate).startsWith(monthKey)
+          )
       : [];
   });
   readonly selectedCustomerSummary = computed(() =>
@@ -71,11 +89,11 @@ export class MonthlyDeliveryReportsComponent {
     try {
       await this.excelService.export({
         companyName: this.settingsService.settings().companyName,
-        monthKey: this.monthKey,
+        monthKey: this.selectedMonthKey(),
         deliveries: this.monthlyDeliveries(),
         customers: this.customers(),
       });
-      this.notification.success(`${this.monthLabel} delivery Excel report downloaded`);
+      this.notification.success(`${this.monthLabel()} delivery Excel report downloaded`);
     } catch (error) {
       console.error('[MonthlyDeliveryReports] Excel export failed:', error);
       this.notification.error('Could not create the monthly delivery Excel report');
@@ -90,11 +108,20 @@ export class MonthlyDeliveryReportsComponent {
     }
 
     try {
+      const customerId = customer.id;
+      const custPayments = this.stateService.payments().filter((p) => p.customerId === customerId);
+      const custMissing = this.stateService.missingCans().filter((m) => m.customerId === customerId);
+      const monthKey = this.selectedMonthKey();
+
       this.invoicePdfService.download({
         companyName: this.settingsService.settings().companyName,
         customer,
-        deliveries: this.selectedCustomerDeliveries(),
-        monthKey: this.monthKey,
+        deliveries: this.stateService.deliveries().filter((d) =>
+          d.customerId === customerId && toDateKey(d.deliveryDate).startsWith(monthKey)
+        ),
+        payments: custPayments,
+        missingCans: custMissing,
+        monthKey,
       });
       this.notification.success(`${customer.name}'s monthly invoice PDF downloaded`);
     } catch (error) {
