@@ -64,6 +64,7 @@ export class CustomersComponent {
     { key: 'totalDelivered', label: 'Total Delivered', type: 'number' },
     { key: 'totalReturned', label: 'Total Returned', type: 'number' },
     { key: 'pendingAmount', label: 'Pending Amount', type: 'currency' },
+    { key: 'advanceAmount', label: 'Advance Balance', type: 'currency' },
     { key: 'status', label: 'Status', type: 'status' },
     { key: 'actions', label: 'Actions', type: 'actions' },
   ];

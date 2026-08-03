@@ -22,10 +22,13 @@ export class GoogleAuthService {
   private tokenClient: google.accounts.oauth2.TokenClient | null = null;
   private pendingRequest: PendingTokenRequest | null = null;
   private tokenExpiresAt = 0;
+  private readonly storageKey = 'google-auth-token';
+  private readonly expiryKey = 'google-auth-expiry';
 
   constructor() {
     if (typeof window !== 'undefined') {
       this.pollForGoogleClient();
+      this.loadSession();
     }
   }
 
@@ -95,7 +98,7 @@ export class GoogleAuthService {
     }
 
     if (this.pendingRequest) {
-      return Promise.reject(new Error('A Google sign-in request is already in progress'));
+      this.rejectPendingRequest(new Error('Previous request cancelled'));
     }
 
     return new Promise((resolve, reject) => {
@@ -161,11 +164,12 @@ export class GoogleAuthService {
   private async waitForClient(): Promise<void> {
     if (this.tokenClient) return;
     return new Promise((resolve, reject) => {
+      let poller: number;
       const timeout = window.setTimeout(() => {
         window.clearInterval(poller);
         reject(new Error('Google Identity client failed to load'));
       }, 30000);
-      const poller = window.setInterval(() => {
+      poller = window.setInterval(() => {
         if ((window as any).google?.accounts?.oauth2) {
           window.clearInterval(poller);
           window.clearTimeout(timeout);

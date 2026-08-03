@@ -16,6 +16,8 @@ export interface Customer {
   totalDelivered: number;
   totalReturned: number;
   pendingAmount?: number;
+  balanceDue?: number;
+  advanceAmount?: number;
   status: 'Active' | 'Inactive' | 'Pending';
   createdAt: string;
   updatedAt: string;
