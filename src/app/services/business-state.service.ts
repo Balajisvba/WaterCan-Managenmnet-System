@@ -17,8 +17,6 @@ export interface CustomerLedgerStats {
   totalInvoiced: number;
   totalPaid: number;
   balance: number;
-  balanceDue: number;
-  advanceAmount: number;
 }
 
 export function calculateCustomerLedger(deliveries: Delivery[], payments: Payment[], missingCans: MissingCan[]): CustomerLedgerStats {
@@ -30,19 +28,13 @@ export function calculateCustomerLedger(deliveries: Delivery[], payments: Paymen
     payments.reduce((sum, payment) => sum + (Number(payment.amount) || 0), 0);
   const missingCanCharges = missingCans.reduce((sum, entry) => sum + (Number(entry.lossAmount) || 0), 0);
 
-  const netBalance = totalInvoiced + missingCanCharges - totalPaid;
-  const balanceDue = netBalance > 0 ? netBalance : 0;
-  const advanceAmount = netBalance < 0 ? Math.abs(netBalance) : 0;
-
   return {
     totalDelivered,
     totalReturned,
     outstandingCan: 0,
     totalInvoiced,
     totalPaid,
-    balance: balanceDue,
-    balanceDue,
-    advanceAmount,
+    balance: Math.max(0, totalInvoiced + missingCanCharges - totalPaid),
   };
 }
 
@@ -153,8 +145,6 @@ export class BusinessStateService {
         totalReturned: ledger.totalReturned,
         outstandingCan,
         pendingAmount: balance,
-        balanceDue: ledger.balanceDue,
-        advanceAmount: ledger.advanceAmount,
         status: derivedStatus,
       };
     });

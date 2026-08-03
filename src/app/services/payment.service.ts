@@ -16,10 +16,7 @@ export class PaymentService {
   }
 
   async add(payment: Omit<Payment, 'id'>): Promise<Payment> {
-    const entity = this.toPayment({
-      ...payment,
-      id: generateId('P', this.payments().map((item) => item.id)),
-    });
+    const entity = this.toPayment({ ...payment, id: generateId('P') });
     this.payments.update((list) => [entity, ...list]);
 
     try {

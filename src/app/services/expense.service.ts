@@ -18,7 +18,7 @@ export class ExpenseService {
   async add(expense: Omit<Expense, 'id' | 'createdAt'>): Promise<Expense> {
     const entity = this.toExpense({
       ...expense,
-      id: generateId('E', this.expenses().map((item) => item.id)),
+      id: generateId('E'),
       createdAt: new Date().toISOString(),
     });
     this.expenses.update((list) => [entity, ...list]);

@@ -120,7 +120,7 @@ export function normalizeSettings(value: Partial<Settings> | RecordValue): Setti
   const record = value as RecordValue;
   const darkMode = record['darkMode'] === true || record['darkMode'] === 'true' || record['theme'] === 'dark';
   return {
-    id: asText(record['id']) || 'S-001',
+    id: asText(record['id']) || 'S-1',
     companyName: asText(record['companyName']) || 'Dhanam Agencies',
     companyLogo: asText(record['companyLogo']),
     canPrice: asNonNegativeNumber(record['canPrice'], 40),

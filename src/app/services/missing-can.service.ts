@@ -18,7 +18,7 @@ export class MissingCanService {
   async add(entry: Omit<MissingCan, 'id'>): Promise<MissingCan> {
     const entity = this.toMissingCan({
       ...entry,
-      id: generateId('M', this.missingCans().map((item) => item.id)),
+      id: generateId('M'),
       createdAt: entry.createdAt || new Date().toISOString(),
     });
     this.missingCans.update((list) => [entity, ...list]);

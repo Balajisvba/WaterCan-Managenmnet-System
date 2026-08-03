@@ -16,10 +16,7 @@ export class DeliveryService {
   }
 
   async add(delivery: Omit<Delivery, 'id'>): Promise<Delivery> {
-    const entity = this.toDelivery({
-      ...delivery,
-      id: generateId('D', this.deliveries().map((item) => item.id)),
-    });
+    const entity = this.toDelivery({ ...delivery, id: generateId('D') });
     this.deliveries.update((list) => [entity, ...list]);
 
     try {
