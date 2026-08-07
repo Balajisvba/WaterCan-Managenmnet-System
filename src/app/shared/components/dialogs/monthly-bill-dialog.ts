@@ -417,7 +417,7 @@ export class MonthlyBillDialogComponent {
 
   readonly selectedCustomer = computed<Customer | undefined>(() => {
     const id = this.selectedCustomerId();
-    return this.stateService.customers().find((c) => c.id === id);
+    return this.data.customers.find((c) => c.id === id);
   });
 
   readonly monthDeliveries = computed<Delivery[]>(() => {

@@ -53,6 +53,7 @@ export class LayoutShellComponent implements OnDestroy {
     { label: 'Expenses', icon: 'receipt_long', route: '/expenses' },
     { label: 'Payments', icon: 'payments', route: '/payments' },
     { label: 'Missing Cans', icon: 'inventory_2', route: '/missing-cans' },
+    { label: 'Monthly Reports', icon: 'description', route: '/monthly-delivery-reports' },
     { label: 'Reports', icon: 'analytics', route: '/reports' },
     { label: 'Settings', icon: 'settings', route: '/settings' },
   ];
