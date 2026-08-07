@@ -23,6 +23,8 @@ export interface Customer {
   updatedAt: string;
 }
 
+export type DeliveryStatus = 'Pending' | 'Delivered';
+
 export interface Delivery {
   id: string;
   customerId: string;
@@ -36,6 +38,7 @@ export interface Delivery {
   driverName: string;
   remarks: string;
   deliveryDate: string;
+  status: DeliveryStatus;
 }
 
 export interface Expense {

@@ -89,6 +89,14 @@ export interface TableColumn {
                       </button>
                     }
 
+                    @if (showDelivered() && row['status']?.toLowerCase() !== 'delivered') {
+                      <button mat-icon-button color="accent"
+                              [attr.aria-label]="'Mark Delivered ' + row['id']"
+                              (click)="deliveredRow.emit(row)">
+                        <mat-icon>check_circle</mat-icon>
+                      </button>
+                    }
+
                     @if (showDelete()) {
                       <button mat-icon-button color="warn"
                               [attr.aria-label]="'Delete ' + row['id']"
@@ -246,12 +254,14 @@ export class DataTableComponent<T> implements AfterViewInit {
   readonly showEdit = input<boolean>(true);
   readonly showDelete = input<boolean>(true);
   readonly showPrint = input<boolean>(false);
+  readonly showDelivered = input<boolean>(false);
   readonly pageSizeOptions = input<number[]>([5, 10, 25, 50]);
 
   readonly editRow = output<T>();
   readonly deleteRow = output<T>();
   readonly viewRow = output<T>();
   readonly printRow = output<T>();
+  readonly deliveredRow = output<T>();
 
   readonly dataSource = new MatTableDataSource<T>([]);
   readonly columnKeys = computed(() => this.columns().map((c) => c.key));

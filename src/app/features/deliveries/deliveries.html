@@ -103,8 +103,10 @@
     [data]="filteredDeliveries()"
     [columns]="columns"
     [showPrint]="true"
+    [showDelivered]="true"
     (editRow)="openEditDialog($event)"
     (printRow)="openInvoice($event)"
+    (deliveredRow)="markDelivered($event)"
     (deleteRow)="confirmDelete($event)"
   ></app-data-table>
 </div>

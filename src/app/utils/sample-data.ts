@@ -86,6 +86,7 @@ export function buildSeedDeliveries(): Delivery[] {
       driverName: 'Aman',
       remarks: 'Priority delivery',
       deliveryDate: new Date().toISOString(),
+      status: 'Pending',
     },
     {
       id: 'D-002',
@@ -100,6 +101,7 @@ export function buildSeedDeliveries(): Delivery[] {
       driverName: 'Ravi',
       remarks: 'Completed',
       deliveryDate: new Date().toISOString(),
+      status: 'Delivered',
     },
   ];
 }

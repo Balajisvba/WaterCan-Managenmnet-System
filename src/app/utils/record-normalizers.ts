@@ -68,7 +68,14 @@ export function normalizeDelivery(value: Partial<Delivery> | RecordValue): Deliv
     driverName: asText(record['driverName']),
     remarks: asText(record['remarks']),
     deliveryDate: asDateText(record['deliveryDate']),
+    status: normalizeDeliveryStatus(record['status']),
   };
+}
+
+function normalizeDeliveryStatus(value: unknown): Delivery['status'] {
+  const status = asText(value).toLowerCase();
+  if (status === 'delivered') return 'Delivered';
+  return 'Pending';
 }
 
 export function normalizeExpense(value: Partial<Expense> | RecordValue): Expense {

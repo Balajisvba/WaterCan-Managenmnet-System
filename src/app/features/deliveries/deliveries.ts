@@ -116,6 +116,7 @@ export class DeliveriesComponent {
     { key: 'totalAmount', label: 'Total Invoiced', type: 'currency' },
     { key: 'paidAmount', label: 'Paid Amount', type: 'currency' },
     { key: 'balance', label: 'Balance Due', type: 'currency' },
+    { key: 'status', label: 'Status', type: 'status' },
     { key: 'driverName', label: 'Driver' },
     { key: 'deliveryDate', label: 'Date', type: 'date' },
     { key: 'actions', label: 'Actions', type: 'actions' },
@@ -193,6 +194,15 @@ export class DeliveriesComponent {
         }
       }
     });
+  }
+
+  async markDelivered(delivery: Delivery): Promise<void> {
+    try {
+      await this.deliveryService.update({ ...delivery, status: 'Delivered' });
+      this.notification.success(`Delivery ${delivery.id} marked as Delivered`);
+    } catch (err) {
+      this.notification.error('Failed to update delivery status');
+    }
   }
 
   exportExcel(): void {
