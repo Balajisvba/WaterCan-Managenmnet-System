@@ -1,16 +1,16 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
-import { StorageService } from '../services/storage.service';
+import { GoogleAuthService } from '../services/google-auth.service';
 
-export const authGuard: CanActivateFn = () => {
-  const storage = inject(StorageService);
+export const authGuard: CanActivateFn = async () => {
+  const authService = inject(GoogleAuthService);
   const router = inject(Router);
-  const session = storage.getItem<{ username: string }>('aqua-login');
 
-  if (session?.username) {
+  await authService.restoreSession();
+
+  if (authService.isSignedIn()) {
     return true;
   }
 
-  router.navigate(['/login']);
-  return false;
+  return router.createUrlTree(['/login']);
 };

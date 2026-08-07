@@ -8,8 +8,9 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
 import { MatInputModule } from '@angular/material/input';
 import { MatDividerModule } from '@angular/material/divider';
-import { BusinessStateService } from '../../../services/business-state.service';
+import { BusinessStateService, calculateCustomerLedger } from '../../../services/business-state.service';
 import { Customer, Delivery } from '../../../models/app.models';
+import { LocalDatePipe } from '../../pipes/local-date.pipe';
 
 export interface MonthlyBillDialogData {
   customers: Customer[];
@@ -29,6 +30,7 @@ export interface MonthlyBillDialogData {
     MatSelectModule,
     MatInputModule,
     MatDividerModule,
+    LocalDatePipe,
   ],
   template: `
     <div class="monthly-bill-container">
@@ -67,7 +69,7 @@ export interface MonthlyBillDialogData {
           <div class="bill-header">
             <div class="brand">
               <h2>Dhanam Agencies</h2>
-              <p>Water Can Supply Management System</p>
+              <p>Dhanam Agencies, Sethiyathope</p>
               <p class="tagline">Monthly Water Can Statement & Tax Invoice</p>
             </div>
             <div class="bill-meta">
@@ -94,6 +96,11 @@ export interface MonthlyBillDialogData {
               <p><strong>Security Deposit:</strong> ₹{{ selectedCustomer()?.depositAmount || 0 }}</p>
               <p><strong>Current Outstanding Cans:</strong> {{ selectedCustomer()?.outstandingCan || 0 }} Cans</p>
               <p><strong>Total Account Balance Due:</strong> <span class="highlight-balance">₹{{ selectedCustomer()?.pendingAmount || 0 }}</span></p>
+              <p><strong>Total Account Balance Due:</strong> <span class="highlight-balance">₹{{ (selectedCustomer()?.balanceDue ?? selectedCustomer()?.pendingAmount ?? 0) }}</span></p>
+              <p><strong>Total Account Balance Due:</strong> <span class="highlight-balance">₹{{ selectedCustomer()?.balanceDue ?? selectedCustomer()?.pendingAmount ?? 0 }}</span></p>
+              @if ((selectedCustomer()?.advanceAmount || 0) > 0) {
+                <p><strong>Customer Advance Balance:</strong> <span class="highlight-advance" style="color: #2e7d32; font-weight: 700;">₹{{ selectedCustomer()?.advanceAmount }}</span></p>
+              }
             </div>
           </div>
 
@@ -116,7 +123,7 @@ export interface MonthlyBillDialogData {
               <tbody>
                 @for (d of monthDeliveries(); track d.id) {
                   <tr>
-                    <td>{{ d.deliveryDate | date:'shortDate' }}</td>
+                    <td>{{ d.deliveryDate | localDate }}</td>
                     <td>{{ d.id }}</td>
                     <td class="text-center">{{ d.filledCans }}</td>
                     <td class="text-center">{{ d.emptyCans }}</td>
@@ -162,6 +169,10 @@ export interface MonthlyBillDialogData {
               <div class="sum-row grand-total">
                 <span>Total Account Balance Payable:</span>
                 <strong>₹{{ selectedCustomer()?.pendingAmount || 0 | number:'1.0-2' }}</strong>
+                <span>Total Account Balance Payable:</span>
+                <strong>₹{{ ((selectedCustomer()?.balanceDue ?? selectedCustomer()?.pendingAmount ?? 0)) | number:'1.0-2' }}</strong>
+                <span>Total Account Balance Due:</span>
+                <strong>₹{{ selectedCustomer()?.balanceDue ?? selectedCustomer()?.pendingAmount ?? 0 | number:'1.0-2' }}</strong>
               </div>
             </div>
           </div>
@@ -406,7 +417,7 @@ export class MonthlyBillDialogComponent {
 
   readonly selectedCustomer = computed<Customer | undefined>(() => {
     const id = this.selectedCustomerId();
-    return this.stateService.customers().find((c) => c.id === id);
+    return this.data.customers.find((c) => c.id === id);
   });
 
   readonly monthDeliveries = computed<Delivery[]>(() => {
@@ -421,18 +432,22 @@ export class MonthlyBillDialogComponent {
 
   readonly monthSummary = computed(() => {
     const deliveries = this.monthDeliveries();
+    const customerId = this.selectedCustomerId();
+    const monthStr = this.selectedMonth();
+    const payments = customerId && monthStr
+      ? this.stateService.payments().filter((payment) => payment.customerId === customerId && payment.paymentDate?.startsWith(monthStr))
+      : [];
     const totalFilled = deliveries.reduce((sum, d) => sum + (Number(d.filledCans) || 0), 0);
     const totalEmpty = deliveries.reduce((sum, d) => sum + (Number(d.emptyCans) || 0), 0);
     const totalInvoiced = deliveries.reduce((sum, d) => sum + (Number(d.totalAmount) || 0), 0);
-    const totalPaid = deliveries.reduce((sum, d) => sum + (Number(d.paidAmount) || 0), 0);
-    const monthBalanceDue = deliveries.reduce((sum, d) => sum + (Number(d.balance) || 0), 0);
+    const ledger = calculateCustomerLedger(deliveries, payments, []);
 
     return {
       totalFilled,
       totalEmpty,
       totalInvoiced,
-      totalPaid,
-      monthBalanceDue,
+      totalPaid: ledger.totalPaid,
+      monthBalanceDue: ledger.balanceDue,
     };
   });
 

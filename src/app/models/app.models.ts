@@ -6,10 +6,18 @@ export interface Customer {
   address: string;
   area: string;
   depositAmount: number;
+  /**
+   * The can balance that existed before this application's delivery history.
+   * It is persisted separately so the derived outstanding balance is never
+   * written back as a new opening balance.
+   */
+  openingOutstandingCans?: number;
   outstandingCan: number;
   totalDelivered: number;
   totalReturned: number;
   pendingAmount?: number;
+  balanceDue?: number;
+  advanceAmount?: number;
   status: 'Active' | 'Inactive' | 'Pending';
   createdAt: string;
   updatedAt: string;
@@ -62,6 +70,7 @@ export interface MissingCan {
 }
 
 export interface Settings {
+  id: string;
   companyName: string;
   companyLogo: string;
   canPrice: number;

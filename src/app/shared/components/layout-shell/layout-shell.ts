@@ -1,5 +1,5 @@
 import { Component, computed, inject, OnDestroy, signal } from '@angular/core';
-import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatListModule } from '@angular/material/list';
@@ -7,9 +7,11 @@ import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { ThemeService } from '../../../services/theme.service';
-import { StorageService } from '../../../services/storage.service';
+import { GoogleAuthService } from '../../../services/google-auth.service';
 import { ExcelService } from '../../../services/excel.service';
 import { NotificationService } from '../../../services/notification.service';
+import { BusinessStateService } from '../../../services/business-state.service';
+import { GoogleSheetService } from '../../../services/google-sheet.service';
 
 @Component({
   selector: 'app-layout-shell',
@@ -30,15 +32,20 @@ import { NotificationService } from '../../../services/notification.service';
 })
 export class LayoutShellComponent implements OnDestroy {
   private readonly themeService = inject(ThemeService);
-  private readonly storageService = inject(StorageService);
+  private readonly authService = inject(GoogleAuthService);
+  private readonly router = inject(Router);
   private readonly excelService = inject(ExcelService);
   private readonly notification = inject(NotificationService);
+  private readonly businessState = inject(BusinessStateService);
+  private readonly googleSheetService = inject(GoogleSheetService);
 
   readonly isDarkMode = computed(() => this.themeService.theme() === 'dark');
   readonly sidenavOpen = signal(true);
   readonly isMobile = signal(false);
   readonly sidenavMode = computed(() => (this.isMobile() ? 'over' : 'side'));
   readonly showBackdrop = computed(() => this.isMobile());
+  readonly isSyncing = this.businessState.isSyncing;
+  readonly isOnline = this.googleSheetService.isOnline;
   readonly navigation = [
     { label: 'Dashboard', icon: 'dashboard', route: '/dashboard' },
     { label: 'Customers', icon: 'people', route: '/customers' },
@@ -46,6 +53,7 @@ export class LayoutShellComponent implements OnDestroy {
     { label: 'Expenses', icon: 'receipt_long', route: '/expenses' },
     { label: 'Payments', icon: 'payments', route: '/payments' },
     { label: 'Missing Cans', icon: 'inventory_2', route: '/missing-cans' },
+    { label: 'Monthly Reports', icon: 'description', route: '/monthly-delivery-reports' },
     { label: 'Reports', icon: 'analytics', route: '/reports' },
     { label: 'Settings', icon: 'settings', route: '/settings' },
   ];
@@ -55,6 +63,7 @@ export class LayoutShellComponent implements OnDestroy {
       this.updateViewport();
       window.addEventListener('resize', this.handleResize);
     }
+    void this.businessState.refresh().catch(() => undefined);
   }
 
   ngOnDestroy(): void {
@@ -96,7 +105,8 @@ export class LayoutShellComponent implements OnDestroy {
   }
 
   logout(): void {
-    this.storageService.removeItem('aqua-login');
-    window.location.reload();
+    this.authService.logout();
+    this.notification.success('Signed out successfully');
+    this.router.navigate(['/login']);
   }
 }

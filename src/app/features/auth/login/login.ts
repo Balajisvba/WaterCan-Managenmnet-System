@@ -1,49 +1,35 @@
 import { Component, inject, signal } from '@angular/core';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
-import { MatCheckboxModule } from '@angular/material/checkbox';
-import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
-import { MatInputModule } from '@angular/material/input';
 import { Router } from '@angular/router';
-import { StorageService } from '../../../services/storage.service';
+import { GoogleAuthService } from '../../../services/google-auth.service';
 import { NotificationService } from '../../../services/notification.service';
 
 @Component({
   selector: 'app-login',
-  imports: [ReactiveFormsModule, MatCardModule, MatButtonModule, MatInputModule, MatFormFieldModule, MatCheckboxModule, MatIconModule],
+  imports: [MatCardModule, MatButtonModule, MatIconModule],
   templateUrl: './login.html',
   styleUrl: './login.css',
 })
 export class LoginComponent {
-  private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
-  private readonly storageService = inject(StorageService);
+  private readonly authService = inject(GoogleAuthService);
   private readonly notifications = inject(NotificationService);
 
-  readonly form: FormGroup = this.fb.group({
-    username: ['', [Validators.required]],
-    password: ['', [Validators.required, Validators.minLength(4)]],
-    rememberMe: [true],
-  });
   readonly loading = signal(false);
 
-  submit(): void {
-    if (this.form.invalid) {
-      this.form.markAllAsTouched();
-      return;
-    }
-
+  async submit(): Promise<void> {
     this.loading.set(true);
-    const { username, password, rememberMe } = this.form.value;
-    if (username === 'admin' && password === 'admin123') {
-      this.storageService.setItem('aqua-login', { username, rememberMe });
-      this.notifications.success('Welcome back, Dhanam Agencies admin');
-      this.router.navigateByUrl('/dashboard');
-    } else {
-      this.notifications.error('Invalid credentials');
+    try {
+      await this.authService.login();
+      this.notifications.success('Signed in with Google');
+      await this.router.navigateByUrl('/dashboard');
+    } catch (error) {
+      console.error('Google sign-in failed:', error);
+      this.notifications.error(error instanceof Error ? error.message : 'Google sign-in failed. Please try again.');
+    } finally {
+      this.loading.set(false);
     }
-    this.loading.set(false);
   }
 }

@@ -45,6 +45,9 @@ export interface MissingCanDialogData {
         <mat-form-field appearance="outline">
           <mat-label>Recovered Quantity</mat-label>
           <input matInput type="number" formControlName="recoveredQuantity" min="0" (input)="recalculate()" />
+          @if (form.get('recoveredQuantity')?.hasError('exceedsMissing')) {
+            <mat-error>Recovered quantity cannot exceed missing quantity</mat-error>
+          }
         </mat-form-field>
 
         <mat-form-field appearance="outline">
@@ -124,6 +127,7 @@ export class MissingCanDialogComponent implements OnInit {
 
     const lost = Math.max(0, missing - recovered);
     const loss = lost * cost;
+    this.updateValidationError('recoveredQuantity', 'exceedsMissing', recovered > missing);
 
     this.form.patchValue(
       {
@@ -143,5 +147,17 @@ export class MissingCanDialogComponent implements OnInit {
         ...this.form.value,
       });
     }
+  }
+
+  private updateValidationError(controlName: string, errorName: string, shouldSet: boolean): void {
+    const control = this.form.get(controlName);
+    if (!control) return;
+    const errors = { ...(control.errors ?? {}) };
+    if (shouldSet) {
+      errors[errorName] = true;
+    } else {
+      delete errors[errorName];
+    }
+    control.setErrors(Object.keys(errors).length ? errors : null);
   }
 }

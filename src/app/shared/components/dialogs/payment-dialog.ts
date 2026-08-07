@@ -7,6 +7,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { Customer, Payment } from '../../../models/app.models';
+import { toLocalDateInputValue } from '../../../utils/date-utils';
 
 export interface PaymentDialogData {
   payment?: Payment;
@@ -84,7 +85,7 @@ export class PaymentDialogComponent {
     paymentDate: [
       this.data.payment?.paymentDate
         ? this.data.payment.paymentDate.split('T')[0]
-        : new Date().toISOString().split('T')[0],
+        : toLocalDateInputValue(new Date()),
       Validators.required,
     ],
     remarks: [this.data.payment?.remarks || ''],
