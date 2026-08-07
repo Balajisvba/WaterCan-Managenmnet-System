@@ -1,6 +1,6 @@
 import { Injectable, signal } from '@angular/core';
 import { Payment } from '../models/app.models';
-import { generateId } from '../utils/sample-data';
+import { generateSequentialId } from '../utils/sample-data';
 import { asText, normalizePayment, requirePositiveNumber, requireText } from '../utils/record-normalizers';
 import { GoogleSheetService } from './google-sheet.service';
 
@@ -16,7 +16,10 @@ export class PaymentService {
   }
 
   async add(payment: Omit<Payment, 'id'>): Promise<Payment> {
-    const entity = this.toPayment({ ...payment, id: generateId('P') });
+    const entity = this.toPayment({
+      ...payment,
+      id: generateSequentialId('P', this.payments().map((item) => item.id)),
+    });
     this.payments.update((list) => [entity, ...list]);
 
     try {

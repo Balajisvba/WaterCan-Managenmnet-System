@@ -1,6 +1,6 @@
 import { Injectable, signal } from '@angular/core';
 import { Expense } from '../models/app.models';
-import { generateId } from '../utils/sample-data';
+import { generateSequentialId } from '../utils/sample-data';
 import { asText, normalizeExpense, requirePositiveNumber, requireText } from '../utils/record-normalizers';
 import { GoogleSheetService } from './google-sheet.service';
 
@@ -18,7 +18,7 @@ export class ExpenseService {
   async add(expense: Omit<Expense, 'id' | 'createdAt'>): Promise<Expense> {
     const entity = this.toExpense({
       ...expense,
-      id: generateId('E'),
+      id: generateSequentialId('E', this.expenses().map((item) => item.id)),
       createdAt: new Date().toISOString(),
     });
     this.expenses.update((list) => [entity, ...list]);

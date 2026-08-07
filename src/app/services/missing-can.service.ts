@@ -1,6 +1,6 @@
 import { Injectable, signal } from '@angular/core';
 import { MissingCan } from '../models/app.models';
-import { generateId } from '../utils/sample-data';
+import { generateSequentialId } from '../utils/sample-data';
 import { asText, normalizeMissingCan, requireNonNegativeNumber, requirePositiveNumber, requireText } from '../utils/record-normalizers';
 import { GoogleSheetService } from './google-sheet.service';
 
@@ -18,7 +18,7 @@ export class MissingCanService {
   async add(entry: Omit<MissingCan, 'id'>): Promise<MissingCan> {
     const entity = this.toMissingCan({
       ...entry,
-      id: generateId('M'),
+      id: generateSequentialId('M', this.missingCans().map((item) => item.id)),
       createdAt: entry.createdAt || new Date().toISOString(),
     });
     this.missingCans.update((list) => [entity, ...list]);

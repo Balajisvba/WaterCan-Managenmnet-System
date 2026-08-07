@@ -2,14 +2,26 @@ import { Customer, Delivery, Expense, MissingCan, Payment, Settings } from '../m
 
 export function generateId(prefix: string): string {
   const randomId = globalThis.crypto?.randomUUID?.().replace(/-/g, '') ?? `${Date.now().toString(36)}${Math.random().toString(36).slice(2)}`;
-  return `${prefix}-${randomId}`;
+  return `${prefix.toUpperCase()}-${randomId}`;
+}
+
+export function generateSequentialId(prefix: string, existingIds: string[], digits = 3): string {
+  const normalizedPrefix = prefix.toUpperCase();
+  const regex = new RegExp(`^${normalizedPrefix}-(\\d{${digits}})$`, 'i');
+  const maxSuffix = existingIds.reduce((currentMax, id) => {
+    const match = regex.exec(id);
+    if (!match) return currentMax;
+    return Math.max(currentMax, Number(match[1]));
+  }, 0);
+
+  return `${normalizedPrefix}-${String(maxSuffix + 1).padStart(digits, '0')}`;
 }
 
 export function buildSeedCustomers(): Customer[] {
   const now = new Date().toISOString();
   return [
     {
-      id: 'C-1001',
+      id: 'C-001',
       name: 'Rahul Kumar',
       mobile: '9876543210',
       alternateMobile: '9123456780',
@@ -25,7 +37,7 @@ export function buildSeedCustomers(): Customer[] {
       updatedAt: now,
     },
     {
-      id: 'C-1002',
+      id: 'C-002',
       name: 'Anita Sharma',
       mobile: '9812345678',
       alternateMobile: '9876123450',
@@ -41,7 +53,7 @@ export function buildSeedCustomers(): Customer[] {
       updatedAt: now,
     },
     {
-      id: 'C-1003',
+      id: 'C-003',
       name: 'Vikram Singh',
       mobile: '9998887776',
       alternateMobile: '9887766554',
@@ -62,8 +74,8 @@ export function buildSeedCustomers(): Customer[] {
 export function buildSeedDeliveries(): Delivery[] {
   return [
     {
-      id: 'D-2001',
-      customerId: 'C-1001',
+      id: 'D-001',
+      customerId: 'C-001',
       customerName: 'Rahul Kumar',
       filledCans: 2,
       emptyCans: 1,
@@ -76,8 +88,8 @@ export function buildSeedDeliveries(): Delivery[] {
       deliveryDate: new Date().toISOString(),
     },
     {
-      id: 'D-2002',
-      customerId: 'C-1002',
+      id: 'D-002',
+      customerId: 'C-002',
       customerName: 'Anita Sharma',
       filledCans: 3,
       emptyCans: 0,
@@ -95,7 +107,7 @@ export function buildSeedDeliveries(): Delivery[] {
 export function buildSeedExpenses(): Expense[] {
   return [
     {
-      id: 'E-3001',
+      id: 'E-001',
       date: new Date().toISOString(),
       category: 'Fuel',
       amount: 1200,
@@ -103,7 +115,7 @@ export function buildSeedExpenses(): Expense[] {
       createdAt: new Date().toISOString(),
     },
     {
-      id: 'E-3002',
+      id: 'E-002',
       date: new Date().toISOString(),
       category: 'Salary',
       amount: 15000,
@@ -116,8 +128,8 @@ export function buildSeedExpenses(): Expense[] {
 export function buildSeedPayments(): Payment[] {
   return [
     {
-      id: 'P-4001',
-      customerId: 'C-1001',
+      id: 'P-001',
+      customerId: 'C-001',
       customerName: 'Rahul Kumar',
       amount: 500,
       paymentDate: new Date().toISOString(),
@@ -129,8 +141,8 @@ export function buildSeedPayments(): Payment[] {
 export function buildSeedMissingCans(): MissingCan[] {
   return [
     {
-      id: 'M-5001',
-      customerId: 'C-1003',
+      id: 'M-001',
+      customerId: 'C-003',
       customerName: 'Vikram Singh',
       missingQuantity: 4,
       recoveredQuantity: 2,

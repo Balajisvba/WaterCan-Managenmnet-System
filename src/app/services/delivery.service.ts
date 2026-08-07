@@ -1,6 +1,6 @@
 import { Injectable, signal } from '@angular/core';
 import { Delivery } from '../models/app.models';
-import { generateId } from '../utils/sample-data';
+import { generateSequentialId } from '../utils/sample-data';
 import { asText, normalizeDelivery, requireNonNegativeNumber, requirePositiveNumber, requireText } from '../utils/record-normalizers';
 import { GoogleSheetService } from './google-sheet.service';
 
@@ -16,7 +16,10 @@ export class DeliveryService {
   }
 
   async add(delivery: Omit<Delivery, 'id'>): Promise<Delivery> {
-    const entity = this.toDelivery({ ...delivery, id: generateId('D') });
+    const entity = this.toDelivery({
+      ...delivery,
+      id: generateSequentialId('D', this.deliveries().map((item) => item.id)),
+    });
     this.deliveries.update((list) => [entity, ...list]);
 
     try {

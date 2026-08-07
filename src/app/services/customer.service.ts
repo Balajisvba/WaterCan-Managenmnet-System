@@ -1,6 +1,6 @@
 import { Injectable, signal } from '@angular/core';
 import { Customer } from '../models/app.models';
-import { generateId } from '../utils/sample-data';
+import { generateSequentialId } from '../utils/sample-data';
 import { asText, normalizeCustomer, requireNonNegativeNumber, requireText } from '../utils/record-normalizers';
 import { GoogleSheetService } from './google-sheet.service';
 
@@ -17,7 +17,12 @@ export class CustomerService {
 
   async add(customer: Omit<Customer, 'id' | 'createdAt' | 'updatedAt'>): Promise<Customer> {
     const now = new Date().toISOString();
-    const entity = this.toCustomer({ ...customer, id: generateId('C'), createdAt: now, updatedAt: now });
+    const entity = this.toCustomer({
+      ...customer,
+      id: generateSequentialId('C', this.customers().map((item) => item.id)),
+      createdAt: now,
+      updatedAt: now,
+    });
     this.customers.update((list) => [entity, ...list]);
 
     try {
