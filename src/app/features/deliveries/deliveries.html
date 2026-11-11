@@ -1,112 +1,11 @@
 <div class="page-container">
-  <div class="page-header">
-    <div>
-      <h2>Water Can Deliveries</h2>
-      <p>Log daily filled cans supplied, empty cans collected, track balance due, and print customer monthly bills.</p>
-    </div>
-    <div class="header-actions">
-      <button mat-flat-button color="primary" (click)="openAddDialog()">
-        <mat-icon>local_shipping</mat-icon> Log New Delivery
-      </button>
-      <button mat-flat-button color="accent" (click)="openMonthlyBillDialog()">
-        <mat-icon>print</mat-icon> Print Monthly Bill
-      </button>
-      <button mat-stroked-button (click)="exportExcel()">
-        <mat-icon>download</mat-icon> Export CSV
-      </button>
-    </div>
-  </div>
+  <div class="page-header"><div><h2>Orders &amp; Deliveries</h2><p>Record customer orders first, then confirm only what was actually delivered.</p></div><div class="header-actions"><button mat-flat-button color="primary" (click)="openAddOrderDialog()"><mat-icon>add_shopping_cart</mat-icon> Order Cans</button>@if (isAdmin()) {<button mat-flat-button color="accent" (click)="openMonthlyBillDialog()"><mat-icon>print</mat-icon> Print Monthly Bill</button><button mat-stroked-button (click)="exportExcel()"><mat-icon>download</mat-icon> Export CSV</button>}</div></div>
 
-  <!-- Calendar Date Filter Toolbar -->
-  <div class="filter-toolbar">
-    <div class="filter-label">
-      <mat-icon color="primary">calendar_month</mat-icon>
-      <span class="filter-title">Date Filter:</span>
-    </div>
+  <section class="workflow-section"><div class="section-heading"><div><h3>Order Cans</h3><p>Orders do not affect billing, inventory, or customer balances.</p></div><span class="count-badge">Pending: {{ pendingOrders().length }}</span></div>
+    <div class="order-table-wrapper"><table class="order-table"><thead><tr><th>Order ID</th><th>Customer</th><th>Ordered Cans</th><th>Order Date</th><th>Status</th><th>Actions</th></tr></thead><tbody>@for (order of pendingOrders(); track order.id) {<tr><td>{{ order.id }}</td><td>{{ order.customerName }}</td><td>{{ order.orderedCans || order.filledCans }}</td><td>{{ order.orderDate || order.deliveryDate }}</td><td><span class="status-pill pending">PENDING</span></td><td><button mat-button color="primary" (click)="openDeliveryDialog(order)">Deliver</button>@if (isAdmin()) {<button mat-button (click)="openEditDialog(order)">Edit</button><button mat-button color="warn" (click)="cancelOrder(order)">Cancel</button>}</td></tr>} @empty {<tr><td colspan="6" class="empty-row">No pending orders.</td></tr>}</tbody></table></div>
+  </section>
 
-    <div class="preset-buttons">
-      <button
-        mat-flat-button
-        [color]="datePreset() === 'all' ? 'primary' : ''"
-        [class.unselected-preset]="datePreset() !== 'all'"
-        (click)="setPreset('all')"
-      >
-        All Time
-      </button>
-      <button
-        mat-flat-button
-        [color]="datePreset() === 'today' ? 'primary' : ''"
-        [class.unselected-preset]="datePreset() !== 'today'"
-        (click)="setPreset('today')"
-      >
-        Today
-      </button>
-      <button
-        mat-flat-button
-        [color]="datePreset() === 'week' ? 'primary' : ''"
-        [class.unselected-preset]="datePreset() !== 'week'"
-        (click)="setPreset('week')"
-      >
-        This Week
-      </button>
-      <button
-        mat-flat-button
-        [color]="datePreset() === 'month' ? 'primary' : ''"
-        [class.unselected-preset]="datePreset() !== 'month'"
-        (click)="setPreset('month')"
-      >
-        This Month
-      </button>
-    </div>
-
-    <div class="custom-date-inputs">
-      <div class="date-input-group">
-        <label for="delivStartDateInput">From:</label>
-        <input
-          id="delivStartDateInput"
-          type="date"
-          class="custom-date-picker"
-          [value]="startDate()"
-          (change)="onCustomDateChange($any($event.target).value, endDate())"
-        />
-      </div>
-
-      <div class="date-input-group">
-        <label for="delivEndDateInput">To:</label>
-        <input
-          id="delivEndDateInput"
-          type="date"
-          class="custom-date-picker"
-          [value]="endDate()"
-          (change)="onCustomDateChange(startDate(), $any($event.target).value)"
-        />
-      </div>
-
-      @if (isFiltered()) {
-        <button mat-stroked-button color="warn" (click)="clearDateFilter()" title="Clear Filter">
-          <mat-icon>filter_alt_off</mat-icon> Reset
-        </button>
-      }
-    </div>
-  </div>
-
-  <div class="toolbar-section">
-    <app-search-box
-      placeholder="Search by customer, driver, remarks, ID..."
-      (searchChange)="searchTerm.set($event)"
-    ></app-search-box>
-
-    <div class="count-badge">Total Deliveries: {{ filteredDeliveries().length }}</div>
-  </div>
-
-  <app-data-table
-    [data]="filteredDeliveries()"
-    [columns]="columns"
-    [showPrint]="true"
-    [showDelivered]="true"
-    (editRow)="openEditDialog($event)"
-    (printRow)="openInvoice($event)"
-    (deliveredRow)="markDelivered($event)"
-    (deleteRow)="confirmDelete($event)"
-  ></app-data-table>
+  <section class="workflow-section"><div class="section-heading"><div><h3>Delivered Cans</h3><p>Only confirmed deliveries appear in bills, balances, reports, and dashboard totals.</p></div><span class="count-badge">Completed: {{ completedDeliveries().length }}</span></div>
+    <app-data-table [data]="completedDeliveries()" [columns]="columns" [showPrint]="isAdmin()" [showEdit]="isAdmin()" [showDelete]="isAdmin()" (editRow)="openEditDialog($event)" (printRow)="openInvoice($event)" (deleteRow)="confirmDelete($event)"></app-data-table>
+  </section>
 </div>

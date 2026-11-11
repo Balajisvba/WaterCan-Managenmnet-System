@@ -76,6 +76,7 @@ export class MonthlyDeliveryReportsComponent {
     return customerId && monthKey
       ? this.stateService.deliveries()
           .filter((delivery) =>
+            delivery.status === 'Delivered' &&
             delivery.customerId === customerId &&
             toDateKey(delivery.deliveryDate).startsWith(monthKey)
           )
@@ -114,7 +115,7 @@ export class MonthlyDeliveryReportsComponent {
       const payments = this.stateService.payments();
       const missingCans = this.stateService.missingCans();
       const customerDeliveries = deliveries.filter(
-        (delivery) => delivery.customerId === customerId && toDateKey(delivery.deliveryDate).startsWith(monthKey),
+        (delivery) => delivery.status === 'Delivered' && delivery.customerId === customerId && toDateKey(delivery.deliveryDate).startsWith(monthKey),
       );
       const customerPayments = payments.filter(
         (payment) => payment.customerId === customerId && toDateKey(payment.paymentDate).startsWith(monthKey),
@@ -124,7 +125,7 @@ export class MonthlyDeliveryReportsComponent {
       );
       const previousDeliveries = deliveries.filter((delivery) => {
         const entryMonthKey = toDateKey(delivery.deliveryDate).slice(0, 7);
-        return delivery.customerId === customerId && entryMonthKey < monthKey;
+        return delivery.status === 'Delivered' && delivery.customerId === customerId && entryMonthKey < monthKey;
       });
       const previousPayments = payments.filter((payment) => {
         const entryMonthKey = toDateKey(payment.paymentDate).slice(0, 7);

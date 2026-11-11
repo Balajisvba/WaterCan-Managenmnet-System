@@ -4,6 +4,23 @@
   gap: 24px;
 }
 
+.driver-workspace { display: flex; flex-direction: column; gap: 24px; }
+.driver-orders { padding: 20px; border: 1px solid var(--card-border); border-radius: 16px; background: var(--card-bg); }
+.driver-count { padding: 6px 10px; border-radius: 999px; background: rgba(37, 99, 235, .1); color: var(--color-primary); font-weight: 700; }
+.driver-order-table { overflow-x: auto; }
+.driver-order-table table { width: 100%; border-collapse: collapse; }
+.driver-order-table th, .driver-order-table td { padding: 13px 10px; border-bottom: 1px solid var(--card-border); text-align: left; white-space: nowrap; }
+.driver-order-table th { color: var(--text-secondary); font-size: .8rem; text-transform: uppercase; }
+.empty-driver-orders { padding: 30px !important; text-align: center !important; color: var(--text-secondary); }
+.admin-settlements { padding: 20px; border: 1px solid var(--card-border); border-radius: 16px; background: var(--card-bg); }
+.settlement-total { padding: 6px 10px; border-radius: 999px; background: rgba(22, 163, 74, .1); color: #15803d; font-weight: 700; }
+.dashboard-inventory { padding: 20px; border: 1px solid var(--card-border); border-radius: 16px; background: var(--card-bg); }
+.inventory-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+.inventory-summary > div { display: flex; flex-direction: column; gap: 6px; padding: 14px; border-radius: 12px; background: var(--bg-hover); }
+.inventory-summary span { color: var(--text-secondary); font-size: .85rem; }
+.inventory-summary strong { color: var(--text-primary); font-size: 1.5rem; }
+.low-stock-alert { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; padding: 12px 14px; border-radius: 10px; background: #fff7ed; color: #c2410c; font-weight: 700; }
+
 .hero-card {
   position: relative;
   overflow: hidden;
@@ -178,6 +195,8 @@
   .kpi-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .inventory-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 900px) {
@@ -233,6 +252,8 @@
     grid-template-columns: 1fr;
     gap: 14px;
   }
+
+  .inventory-summary { grid-template-columns: 1fr; }
 
   .recent-section {
     padding: 14px;

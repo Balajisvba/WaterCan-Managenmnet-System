@@ -3,12 +3,13 @@ import { Delivery } from '../models/app.models';
 import { generateSequentialId } from '../utils/sample-data';
 import { asText, normalizeDelivery, requireNonNegativeNumber, requirePositiveNumber, requireText } from '../utils/record-normalizers';
 import { GoogleSheetService } from './google-sheet.service';
+import { InventoryService } from './inventory.service';
 
 @Injectable({ providedIn: 'root' })
 export class DeliveryService {
   readonly deliveries = signal<Delivery[]>([]);
 
-  constructor(private readonly googleSheetService: GoogleSheetService) {}
+  constructor(private readonly googleSheetService: GoogleSheetService, private readonly inventoryService: InventoryService) {}
 
   async load(): Promise<void> {
     const stored = await this.googleSheetService.read<Delivery>('Deliveries');
@@ -34,11 +35,14 @@ export class DeliveryService {
 
   async update(delivery: Delivery): Promise<void> {
     const entity = this.toDelivery(delivery);
+    const existing = this.deliveries().find((item) => item.id === entity.id);
+    this.inventoryService.validateDeliveryChange(existing, entity);
     const previous = this.deliveries();
     this.deliveries.update((list) => list.map((item) => (item.id === entity.id ? entity : item)));
 
     try {
       await this.googleSheetService.update<Delivery>('Deliveries', entity);
+      await this.inventoryService.recordDeliveryChange(existing, entity);
     } catch (error) {
       this.deliveries.set(previous);
       throw error;
@@ -46,12 +50,21 @@ export class DeliveryService {
   }
 
   async remove(id: string): Promise<void> {
+    const existing = this.deliveries().find((item) => item.id === id);
+    const cancelled = existing?.status === 'Delivered' ? { ...existing, status: 'Cancelled' as const } : undefined;
+    if (existing && cancelled) {
+      this.inventoryService.validateDeliveryChange(existing, cancelled);
+      await this.inventoryService.recordDeliveryChange(existing, cancelled);
+    }
     const previous = this.deliveries();
     this.deliveries.update((list) => list.filter((item) => item.id !== id));
     try {
       await this.googleSheetService.delete('Deliveries', id);
     } catch (error) {
       this.deliveries.set(previous);
+      if (existing && cancelled) {
+        await this.inventoryService.recordDeliveryChange(cancelled, existing).catch(() => undefined);
+      }
       throw error;
     }
   }
@@ -68,11 +81,18 @@ export class DeliveryService {
   }
 
   private toDelivery(value: Partial<Delivery>): Delivery {
+    const status = value.status ?? 'Delivered';
     const filledCans = requirePositiveNumber(value.filledCans, 'Filled cans', true);
-    const ratePerCan = requirePositiveNumber(value.ratePerCan, 'Rate per can');
-    const paidAmount = requireNonNegativeNumber(value.paidAmount, 'Paid amount');
-    const totalAmount = filledCans * ratePerCan;
-    if (paidAmount > totalAmount) {
+    const ratePerCan = status === 'Pending'
+      ? requireNonNegativeNumber(value.ratePerCan ?? 0, 'Rate per can')
+      : requirePositiveNumber(value.ratePerCan, 'Rate per can');
+    const totalAmount = status === 'Delivered' ? filledCans * ratePerCan : 0;
+    const paymentMode = value.paymentMode || 'Cash';
+    const cashCollected = paymentMode === 'Cash' && value.cashCollected === true;
+    const paidAmount = status === 'Delivered'
+      ? paymentMode === 'GPay' || cashCollected ? totalAmount : 0
+      : 0;
+    if (status === 'Delivered' && paidAmount > totalAmount) {
       throw new Error('Paid amount cannot exceed the delivery invoice total');
     }
 
@@ -85,8 +105,15 @@ export class DeliveryService {
       emptyCans: requireNonNegativeNumber(value.emptyCans, 'Empty cans', true),
       ratePerCan,
       paidAmount,
-      driverName: requireText(value.driverName, 'Driver name'),
+      driverName: status === 'Delivered' ? requireText(value.driverName, 'Driver name') : (value.driverName || ''),
       deliveryDate: requireText(value.deliveryDate, 'Delivery date'),
+      status,
+      orderedCans: requirePositiveNumber(value.orderedCans ?? filledCans, 'Ordered cans', true),
+      orderDate: value.orderDate || value.deliveryDate,
+      driverId: value.driverId || '',
+      paymentMode,
+      cashCollected,
+      cashSettled: value.cashSettled === true,
     });
   }
 

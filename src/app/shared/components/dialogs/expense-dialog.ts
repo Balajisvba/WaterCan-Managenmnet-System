@@ -6,13 +6,14 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
+import { MatDatepickerModule } from '@angular/material/datepicker';
 import { Expense } from '../../../models/app.models';
-import { toLocalDateInputValue } from '../../../utils/date-utils';
+import { toDatePickerValue, toLocalDateInputValue } from '../../../utils/date-utils';
 
 @Component({
   selector: 'app-expense-dialog',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, MatDialogModule, MatButtonModule, MatFormFieldModule, MatInputModule, MatSelectModule],
+  imports: [CommonModule, ReactiveFormsModule, MatDialogModule, MatButtonModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatDatepickerModule],
   template: `
     <h2 mat-dialog-title>{{ data ? 'Edit Expense' : 'Record New Expense' }}</h2>
     <mat-dialog-content>
@@ -39,7 +40,9 @@ import { toLocalDateInputValue } from '../../../utils/date-utils';
 
         <mat-form-field appearance="outline">
           <mat-label>Date</mat-label>
-          <input matInput type="date" formControlName="date" />
+          <input matInput [matDatepicker]="expensePicker" formControlName="date" />
+          <mat-datepicker-toggle matIconSuffix [for]="expensePicker"></mat-datepicker-toggle>
+          <mat-datepicker #expensePicker></mat-datepicker>
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="full-width">
@@ -76,7 +79,7 @@ export class ExpenseDialogComponent {
   readonly form: FormGroup = this.fb.group({
     category: [this.data?.category || 'Fuel', Validators.required],
     amount: [this.data?.amount ?? 0, [Validators.required, Validators.min(1)]],
-    date: [this.data?.date ? this.data.date.split('T')[0] : toLocalDateInputValue(new Date()), Validators.required],
+    date: [toDatePickerValue(this.data?.date) || new Date(), Validators.required],
     remarks: [this.data?.remarks || ''],
   });
 
@@ -85,6 +88,7 @@ export class ExpenseDialogComponent {
       this.dialogRef.close({
         ...this.data,
         ...this.form.value,
+        date: toLocalDateInputValue(this.form.value.date),
       });
     }
   }

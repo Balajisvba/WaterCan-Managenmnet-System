@@ -9,6 +9,8 @@ import { MissingCanService } from './missing-can.service';
 import { PaymentService } from './payment.service';
 import { SettingsService } from './settings.service';
 import { GoogleAuthService } from './google-auth.service';
+import { DriverService } from './driver.service';
+import { InventoryService } from './inventory.service';
 
 export interface CustomerLedgerStats {
   totalDelivered: number;
@@ -22,6 +24,7 @@ export interface CustomerLedgerStats {
 }
 
 export function calculateCustomerLedger(deliveries: Delivery[], payments: Payment[], missingCans: MissingCan[]): CustomerLedgerStats {
+  deliveries = deliveries.filter((delivery) => delivery.status === 'Delivered');
   const totalDelivered = deliveries.reduce((sum, delivery) => sum + (Number(delivery.filledCans) || 0), 0);
   const totalReturned = deliveries.reduce((sum, delivery) => sum + (Number(delivery.emptyCans) || 0), 0);
   const totalInvoiced = deliveries.reduce((sum, delivery) => sum + (Number(delivery.totalAmount) || 0), 0);
@@ -68,6 +71,8 @@ export class BusinessStateService {
   private readonly missingCanService = inject(MissingCanService);
   private readonly settingsService = inject(SettingsService);
   private readonly authService = inject(GoogleAuthService);
+  private readonly driverService = inject(DriverService);
+  private readonly inventoryService = inject(InventoryService);
   private refreshInFlight: Promise<void> | null = null;
 
   readonly isSyncing = signal(false);
@@ -79,6 +84,7 @@ export class BusinessStateService {
   readonly payments = this.paymentService.payments;
   readonly expenses = this.expenseService.expenses;
   readonly missingCans = this.missingCanService.missingCans;
+  readonly drivers = this.driverService.driversWithCash;
 
   constructor() {
     effect((onCleanup) => {
@@ -110,6 +116,8 @@ export class BusinessStateService {
       this.expenseService.load(),
       this.missingCanService.load(),
       this.settingsService.load(),
+      this.driverService.load(),
+      this.inventoryService.load(),
     ])
       .then(() => {
         this.lastSyncedAt.set(new Date());
@@ -128,7 +136,7 @@ export class BusinessStateService {
 
   readonly customers = computed<Customer[]>(() => {
     const raw = this.rawCustomers();
-    const deliveries = this.deliveries();
+    const deliveries = this.deliveries().filter((delivery) => delivery.status === 'Delivered');
     const payments = this.payments();
     const missing = this.missingCans();
 
@@ -161,7 +169,7 @@ export class BusinessStateService {
 
   readonly dashboardSummary = computed<DashboardSummary>(() => {
     const customers = this.customers();
-    const deliveries = this.deliveries();
+    const deliveries = this.deliveries().filter((delivery) => delivery.status === 'Delivered');
     const expenses = this.expenses();
     const missing = this.missingCans();
 
@@ -210,7 +218,7 @@ export class BusinessStateService {
 
   readonly reportSummary = computed<ReportSummary>(() => {
     const customers = this.customers();
-    const deliveries = this.deliveries();
+    const deliveries = this.deliveries().filter((delivery) => delivery.status === 'Delivered');
     const expenses = this.expenses();
     const missing = this.missingCans();
     const payments = this.payments();

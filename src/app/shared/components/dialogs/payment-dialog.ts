@@ -6,8 +6,9 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
+import { MatDatepickerModule } from '@angular/material/datepicker';
 import { Customer, Payment } from '../../../models/app.models';
-import { toLocalDateInputValue } from '../../../utils/date-utils';
+import { toDatePickerValue, toLocalDateInputValue } from '../../../utils/date-utils';
 
 export interface PaymentDialogData {
   payment?: Payment;
@@ -17,7 +18,7 @@ export interface PaymentDialogData {
 @Component({
   selector: 'app-payment-dialog',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, MatDialogModule, MatButtonModule, MatFormFieldModule, MatInputModule, MatSelectModule],
+  imports: [CommonModule, ReactiveFormsModule, MatDialogModule, MatButtonModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatDatepickerModule],
   template: `
     <h2 mat-dialog-title>{{ data.payment ? 'Edit Payment' : 'Record Customer Payment' }}</h2>
     <mat-dialog-content>
@@ -46,7 +47,9 @@ export interface PaymentDialogData {
 
         <mat-form-field appearance="outline">
           <mat-label>Payment Date</mat-label>
-          <input matInput type="date" formControlName="paymentDate" />
+          <input matInput [matDatepicker]="paymentPicker" formControlName="paymentDate" />
+          <mat-datepicker-toggle matIconSuffix [for]="paymentPicker"></mat-datepicker-toggle>
+          <mat-datepicker #paymentPicker></mat-datepicker>
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="full-width">
@@ -84,8 +87,8 @@ export class PaymentDialogComponent {
     amount: [this.data.payment?.amount ?? 0, [Validators.required, Validators.min(1)]],
     paymentDate: [
       this.data.payment?.paymentDate
-        ? this.data.payment.paymentDate.split('T')[0]
-        : toLocalDateInputValue(new Date()),
+        ? toDatePickerValue(this.data.payment.paymentDate)
+        : new Date(),
       Validators.required,
     ],
     remarks: [this.data.payment?.remarks || ''],
@@ -103,6 +106,7 @@ export class PaymentDialogComponent {
       this.dialogRef.close({
         ...this.data.payment,
         ...this.form.value,
+        paymentDate: toLocalDateInputValue(this.form.value.paymentDate),
       });
     }
   }

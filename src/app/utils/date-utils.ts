@@ -31,6 +31,17 @@ export function toDateKey(value: string | Date | null | undefined): string {
   return toLocalDateInputValue(value);
 }
 
+export function toDatePickerValue(value: string | Date | null | undefined): Date | null {
+  const key = toDateKey(value);
+  if (!key) {
+    return null;
+  }
+
+  const [year, month, day] = key.split('-').map(Number);
+  const date = new Date(year, month - 1, day);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
 export function isDateInRange(value: string | undefined, start: string, end: string): boolean {
   if (!value) {
     return false;

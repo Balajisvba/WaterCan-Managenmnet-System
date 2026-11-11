@@ -28,6 +28,10 @@ import { MissingCanDialogComponent } from '../../shared/components/dialogs/missi
 import { InvoiceDialogComponent } from '../../shared/components/dialogs/invoice-dialog';
 import { Delivery } from '../../models/app.models';
 import { toDateKey, toLocalDateInputValue } from '../../utils/date-utils';
+import { RoleService } from '../../services/role.service';
+import { DriverService } from '../../services/driver.service';
+import { InventoryService } from '../../services/inventory.service';
+import { SettingsService } from '../../services/settings.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -60,9 +64,26 @@ export class DashboardComponent {
   private readonly excelService = inject(ExcelService);
   private readonly dialog = inject(MatDialog);
   private readonly notification = inject(NotificationService);
+  readonly isDriver = inject(RoleService).isDriver;
+  readonly driverSettlements = inject(DriverService).settlements;
+  readonly totalDriverSettlements = computed(() => this.driverSettlements().reduce((sum, item) => sum + (Number(item.amount) || 0), 0));
+  private readonly inventoryService = inject(InventoryService);
+  private readonly settingsService = inject(SettingsService);
+  readonly availableStock = this.inventoryService.currentStock;
+  readonly inventoryMonthStats = computed(() => {
+    const prefix = toDateKey(new Date()).slice(0, 7);
+    const rows = this.inventoryService.transactions().filter((item) => item.transactionDate.startsWith(prefix));
+    return {
+      received: rows.reduce((sum, item) => sum + item.stockIn, 0),
+      delivered: rows.filter((item) => item.type === 'Delivery').reduce((sum, item) => sum + item.stockOut, 0),
+      returned: rows.filter((item) => item.type === 'Delivery' || item.type === 'Return').reduce((sum, item) => sum + item.stockIn, 0),
+    };
+  });
+  readonly inventoryLowStock = computed(() => this.availableStock() <= (this.settingsService.settings().lowStockThreshold ?? 15));
 
   readonly datePreset = signal<'all' | 'today' | 'custom'>('all');
   readonly selectedDate = signal<string>('');
+  readonly pendingOrders = computed(() => this.stateService.deliveries().filter((delivery) => delivery.status === 'Pending'));
 
   readonly isFiltered = computed(() => {
     return this.datePreset() !== 'all' || !!this.selectedDate();
@@ -119,7 +140,7 @@ export class DashboardComponent {
     const customers = this.stateService.customers();
 
     const filteredDeliveries = deliveries.filter(
-      (d) => toDateKey(d.deliveryDate) === targetDate
+      (d) => d.status === 'Delivered' && toDateKey(d.deliveryDate) === targetDate
     );
     const filteredExpenses = expenses.filter(
       (e) => toDateKey(e.date) === targetDate
@@ -203,16 +224,37 @@ export class DashboardComponent {
   openNewDelivery(): void {
     const dialogRef = this.dialog.open(DeliveryDialogComponent, {
       width: '600px',
-      data: { customers: this.stateService.customers() },
+      data: { customers: this.stateService.customers(), mode: 'order' },
     });
     dialogRef.afterClosed().subscribe(async (result) => {
       if (result) {
         try {
           await this.deliveryService.add(result);
-          this.notification.success('Delivery recorded successfully');
+          this.notification.success('Order added successfully');
         } catch {
           this.notification.error('Failed to record delivery');
         }
+      }
+    });
+  }
+
+  openPendingDelivery(order: Delivery): void {
+    const dialogRef = this.dialog.open(DeliveryDialogComponent, {
+      width: '600px',
+      data: {
+        delivery: order,
+        customers: this.stateService.customers(),
+        drivers: this.stateService.drivers().filter((driver) => driver.status === 'Active'),
+        mode: 'delivery',
+      },
+    });
+    dialogRef.afterClosed().subscribe(async (result) => {
+      if (!result) return;
+      try {
+        await this.deliveryService.update(result);
+        this.notification.success('Delivery confirmed successfully');
+      } catch {
+        this.notification.error('Failed to confirm delivery');
       }
     });
   }

@@ -1,7 +1,9 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, signal, inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
 import { environment } from '../../environments/environment';
 
-const SCOPES = 'https://www.googleapis.com/auth/spreadsheets';
+const SCOPES = 'https://www.googleapis.com/auth/spreadsheets openid email profile';
 const SESSION_STORAGE_KEY = 'aqua-track-google-session';
 
 interface PendingTokenRequest {
@@ -19,6 +21,8 @@ interface StoredSession {
 export class GoogleAuthService {
   readonly isSignedIn = signal(false);
   readonly accessToken = signal<string | null>(null);
+  readonly userEmail = signal<string | null>(null);
+  private readonly http = inject(HttpClient);
   private tokenClient: google.accounts.oauth2.TokenClient | null = null;
   private pendingRequest: PendingTokenRequest | null = null;
   private tokenExpiresAt = 0;
@@ -44,6 +48,7 @@ export class GoogleAuthService {
   async login(): Promise<void> {
     await this.ensureGoogleClient();
     await this.requestToken('select_account');
+    await this.loadUserProfile();
   }
 
   async restoreSession(): Promise<void> {
@@ -52,6 +57,7 @@ export class GoogleAuthService {
     await this.ensureGoogleClient();
 
     if (this.hasValidToken()) {
+      if (!this.userEmail()) await this.loadUserProfile();
       return;
     }
 
@@ -60,6 +66,7 @@ export class GoogleAuthService {
       this.accessToken.set(storedSession.accessToken);
       this.tokenExpiresAt = storedSession.expiresAt;
       this.isSignedIn.set(true);
+      await this.loadUserProfile();
       return;
     }
 
@@ -232,6 +239,7 @@ export class GoogleAuthService {
     this.tokenExpiresAt = Date.now() + Math.max(0, (response.expires_in ?? 3600) - 60) * 1000;
     this.isSignedIn.set(true);
     this.persistSession();
+    void this.loadUserProfile();
     this.scheduleRefresh();
     pending?.resolve();
   }
@@ -360,9 +368,21 @@ export class GoogleAuthService {
   private clearSession(): void {
     this.accessToken.set(null);
     this.isSignedIn.set(false);
+    this.userEmail.set(null);
     this.tokenExpiresAt = 0;
     if (typeof window !== 'undefined') {
       window.localStorage.removeItem(SESSION_STORAGE_KEY);
+    }
+  }
+
+  private async loadUserProfile(): Promise<void> {
+    const token = this.accessToken();
+    if (!token) return;
+    try {
+      const profile = await firstValueFrom(this.http.get<{ email?: string }>('https://www.googleapis.com/oauth2/v3/userinfo', { headers: { Authorization: `Bearer ${token}` } }));
+      this.userEmail.set(profile.email?.toLowerCase() || null);
+    } catch {
+      this.userEmail.set(null);
     }
   }
 }

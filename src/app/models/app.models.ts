@@ -23,7 +23,28 @@ export interface Customer {
   updatedAt: string;
 }
 
-export type DeliveryStatus = 'Pending' | 'Delivered';
+export interface Driver {
+  id: string;
+  name: string;
+  age: number;
+  mobile: string;
+  address: string;
+  joiningDate: string;
+  status: 'Active' | 'Inactive';
+  createdAt: string;
+  updatedAt: string;
+  cashCollected?: number;
+}
+
+export interface DriverCashSettlement {
+  id: string;
+  driverId: string;
+  driverName: string;
+  settlementDate: string;
+  amount: number;
+}
+
+export type DeliveryStatus = 'Pending' | 'Delivered' | 'Cancelled';
 
 export interface Delivery {
   id: string;
@@ -39,6 +60,26 @@ export interface Delivery {
   remarks: string;
   deliveryDate: string;
   status: DeliveryStatus;
+  orderedCans?: number;
+  orderDate?: string;
+  driverId?: string;
+  paymentMode?: 'Cash' | 'GPay' | 'Account';
+  cashCollected?: boolean;
+  cashSettled?: boolean;
+}
+
+export type InventoryTransactionType = 'Opening Stock' | 'New Load' | 'Delivery' | 'Return' | 'Adjustment';
+
+export interface InventoryTransaction {
+  id: string;
+  transactionDate: string;
+  type: InventoryTransactionType;
+  description: string;
+  stockIn: number;
+  stockOut: number;
+  previousStock: number;
+  balance: number;
+  referenceId?: string;
 }
 
 export interface Expense {
@@ -81,6 +122,7 @@ export interface Settings {
   theme: 'light' | 'dark';
   darkMode: boolean;
   backupDate: string;
+  lowStockThreshold: number;
 }
 
 export interface DashboardSummary {

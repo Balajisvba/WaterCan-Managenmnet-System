@@ -1,13 +1,15 @@
 import { Injectable, inject } from '@angular/core';
 import { Workbook, Worksheet } from 'exceljs';
 import { saveAs } from 'file-saver-es';
-import { Customer, Delivery, Expense, MissingCan, Payment, ReportSummary, Settings } from '../models/app.models';
+import { Customer, Delivery, DriverCashSettlement, Expense, InventoryTransaction, MissingCan, Payment, ReportSummary, Settings } from '../models/app.models';
 import { SettingsService } from './settings.service';
 import { CustomerService } from './customer.service';
 import { DeliveryService } from './delivery.service';
 import { ExpenseService } from './expense.service';
 import { PaymentService } from './payment.service';
 import { MissingCanService } from './missing-can.service';
+import { DriverService } from './driver.service';
+import { InventoryService } from './inventory.service';
 
 export interface ExcelWorkbookData {
   dashboard: unknown[];
@@ -18,6 +20,8 @@ export interface ExcelWorkbookData {
   payments: Payment[];
   profit: unknown[];
   settings: Settings[];
+  driverSettlements: DriverCashSettlement[];
+  inventory: InventoryTransaction[];
 }
 
 @Injectable({ providedIn: 'root' })
@@ -28,6 +32,8 @@ export class ExcelService {
   private readonly expenseService = inject(ExpenseService);
   private readonly paymentService = inject(PaymentService);
   private readonly missingCanService = inject(MissingCanService);
+  private readonly driverService = inject(DriverService);
+  private readonly inventoryService = inject(InventoryService);
 
   async importWorkbook(file: File): Promise<boolean> {
     try {
@@ -46,6 +52,9 @@ export class ExcelService {
       await this.paymentService.replaceAll(data.payments);
       await this.missingCanService.replaceAll(data.missing);
       await this.settingsService.replaceAll(data.settings);
+      if (data.inventory.length > 0) {
+        await this.inventoryService.replaceAll(data.inventory);
+      }
       return true;
     } catch (err) {
       console.error('Error importing workbook:', err);
@@ -63,6 +72,8 @@ export class ExcelService {
       payments: this.paymentService.payments(),
       profit: [],
       settings: [this.settingsService.settings()],
+      driverSettlements: this.driverService.settlements(),
+      inventory: this.inventoryService.transactions(),
     };
 
     const workbook = new Workbook();
@@ -77,6 +88,8 @@ export class ExcelService {
     this.createSheet(workbook, 'Missing Cans', activeData.missing);
     this.createSheet(workbook, 'Payments', activeData.payments);
     this.createSheet(workbook, 'Settings', activeData.settings);
+    this.createSheet(workbook, 'Driver Cash Settlements', activeData.driverSettlements);
+    this.createSheet(workbook, 'Inventory', activeData.inventory);
 
     const buffer = await workbook.xlsx.writeBuffer();
     const blob = new Blob([buffer], {
@@ -165,6 +178,8 @@ export class ExcelService {
     const missingSheet = workbook.getWorksheet('Missing Cans') || workbook.getWorksheet('MissingCans');
     const paymentsSheet = workbook.getWorksheet('Payments');
     const settingsSheet = workbook.getWorksheet('Settings');
+    const driverSettlementsSheet = workbook.getWorksheet('Driver Cash Settlements');
+    const inventorySheet = workbook.getWorksheet('Inventory');
 
     return {
       dashboard: dashboardSheet ? this.rowsToObjects(dashboardSheet) : [],
@@ -175,6 +190,8 @@ export class ExcelService {
       missing: missingSheet ? this.rowsToObjects<MissingCan>(missingSheet) : [],
       payments: paymentsSheet ? this.rowsToObjects<Payment>(paymentsSheet) : [],
       settings: settingsSheet ? this.rowsToObjects<Settings>(settingsSheet) : [],
+      driverSettlements: driverSettlementsSheet ? this.rowsToObjects<DriverCashSettlement>(driverSettlementsSheet) : [],
+      inventory: inventorySheet ? this.rowsToObjects<InventoryTransaction>(inventorySheet) : [],
     };
   }
 

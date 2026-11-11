@@ -1,4 +1,4 @@
-import { Customer, Delivery, Expense, MissingCan, Payment, Settings } from '../models/app.models';
+import { Customer, Delivery, Driver, Expense, MissingCan, Payment, Settings } from '../models/app.models';
 import { toDateKey } from './date-utils';
 
 type RecordValue = Record<string, unknown>;
@@ -48,12 +48,24 @@ export function normalizeCustomer(value: Partial<Customer> | RecordValue): Custo
   };
 }
 
+export function normalizeDriver(value: Partial<Driver> | RecordValue): Driver {
+  const record = value as RecordValue;
+  return {
+    id: asText(record['id']), name: asText(record['name']), age: asNonNegativeNumber(record['age']),
+    mobile: asText(record['mobile']), address: asText(record['address']), joiningDate: asDateText(record['joiningDate']),
+    status: asText(record['status']).toLowerCase() === 'inactive' ? 'Inactive' : 'Active',
+    createdAt: asDateText(record['createdAt']), updatedAt: asDateText(record['updatedAt']), cashCollected: 0,
+  };
+}
+
 export function normalizeDelivery(value: Partial<Delivery> | RecordValue): Delivery {
   const record = value as RecordValue;
+  const status = normalizeDeliveryStatus(record['status']);
   const filledCans = asNonNegativeNumber(record['filledCans']);
+  const orderedCans = asNonNegativeNumber(record['orderedCans'] ?? filledCans);
   const ratePerCan = asNonNegativeNumber(record['ratePerCan']);
-  const totalAmount = filledCans * ratePerCan;
-  const paidAmount = asNonNegativeNumber(record['paidAmount']);
+  const totalAmount = status === 'Delivered' ? filledCans * ratePerCan : 0;
+  const paidAmount = status === 'Delivered' ? asNonNegativeNumber(record['paidAmount']) : 0;
 
   return {
     id: asText(record['id']),
@@ -68,13 +80,27 @@ export function normalizeDelivery(value: Partial<Delivery> | RecordValue): Deliv
     driverName: asText(record['driverName']),
     remarks: asText(record['remarks']),
     deliveryDate: asDateText(record['deliveryDate']),
-    status: normalizeDeliveryStatus(record['status']),
+    status,
+    orderedCans,
+    orderDate: asDateText(record['orderDate'] ?? record['deliveryDate']),
+    driverId: asText(record['driverId']),
+    paymentMode: normalizePaymentMode(record['paymentMode']),
+    cashCollected: record['cashCollected'] === true || asText(record['cashCollected']).toLowerCase() === 'true' || (asText(record['paymentMode']).toLowerCase() === 'cash' && asNonNegativeNumber(record['paidAmount']) > 0),
+    cashSettled: record['cashSettled'] === true || asText(record['cashSettled']).toLowerCase() === 'true',
   };
+}
+
+function normalizePaymentMode(value: unknown): Delivery['paymentMode'] {
+  const mode = asText(value).toLowerCase();
+  if (mode === 'gpay' || mode === 'upi') return 'GPay';
+  if (mode === 'account' || mode === 'due') return 'Account';
+  return 'Cash';
 }
 
 function normalizeDeliveryStatus(value: unknown): Delivery['status'] {
   const status = asText(value).toLowerCase();
   if (status === 'delivered') return 'Delivered';
+  if (status === 'cancelled') return 'Cancelled';
   return 'Pending';
 }
 
@@ -135,6 +161,7 @@ export function normalizeSettings(value: Partial<Settings> | RecordValue): Setti
     theme: darkMode ? 'dark' : 'light',
     darkMode,
     backupDate: asDateText(record['backupDate']),
+    lowStockThreshold: asNonNegativeNumber(record['lowStockThreshold'], 15),
   };
 }
 

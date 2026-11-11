@@ -124,3 +124,14 @@
     align-items: stretch;
   }
 }
+.workflow-section { margin: 20px 0; padding: 20px; background: var(--surface, #fff); border: 1px solid #e2e8f0; border-radius: 12px; }
+.section-heading { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 14px; }
+.section-heading h3 { margin: 0; }
+.section-heading p { margin: 4px 0 0; color: #64748b; }
+.order-table-wrapper { overflow-x: auto; }
+.order-table { width: 100%; border-collapse: collapse; }
+.order-table th, .order-table td { padding: 12px 10px; border-bottom: 1px solid #e2e8f0; text-align: left; white-space: nowrap; }
+.order-table th { color: #475569; font-size: .82rem; text-transform: uppercase; }
+.status-pill { padding: 4px 8px; border-radius: 999px; font-size: .75rem; font-weight: 700; }
+.status-pill.pending { color: #92400e; background: #fef3c7; }
+.empty-row { text-align: center !important; color: #64748b; padding: 24px !important; }

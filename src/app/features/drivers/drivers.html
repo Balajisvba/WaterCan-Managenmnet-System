@@ -1,0 +1,23 @@
+<div class="page-container">
+  <div class="page-header">
+    <div><h2>Drivers</h2><p>Register delivery drivers and track cash collected from completed deliveries.</p></div>
+    <button mat-flat-button color="primary" (click)="add()"><mat-icon>person_add</mat-icon> Register Driver</button>
+  </div>
+  <input class="search-input" type="search" placeholder="Search driver name or mobile" [value]="search()" (input)="search.set($any($event.target).value)" />
+  <div class="table-wrapper">
+    <table>
+      <thead><tr><th>Name</th><th>Age</th><th>Mobile</th><th>Address</th><th>Joining Date</th><th>Cash Collected</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody>
+        @for (driver of drivers(); track driver.id) {
+          <tr>
+            <td>{{ driver.name }}</td><td>{{ driver.age }}</td><td>{{ driver.mobile }}</td><td>{{ driver.address }}</td><td>{{ driver.joiningDate }}</td>
+            <td>₹{{ driver.cashCollected || 0 | number:'1.0-2' }}</td><td>{{ driver.status }}</td>
+            <td><button mat-flat-button color="primary" (click)="settleCash(driver)">Logout</button><button mat-button (click)="edit(driver)">Edit</button><button mat-button color="warn" (click)="remove(driver)">Delete</button></td>
+          </tr>
+        } @empty {
+          <tr><td colspan="8" class="empty">No drivers registered.</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>

@@ -42,6 +42,7 @@ export class SettingsComponent {
     companyName: ['Dhanam Agencies', Validators.required],
     canPrice: [40, [Validators.required, Validators.min(1)]],
     depositAmount: [500, [Validators.required, Validators.min(0)]],
+    lowStockThreshold: [15, [Validators.required, Validators.min(0)]],
     darkMode: [this.themeService.theme() === 'dark'],
   });
 
@@ -52,6 +53,7 @@ export class SettingsComponent {
         companyName: updated.companyName || 'Dhanam Agencies',
         canPrice: updated.canPrice ?? 40,
         depositAmount: updated.depositAmount ?? 500,
+        lowStockThreshold: updated.lowStockThreshold ?? 15,
         darkMode: updated.darkMode ?? (this.themeService.theme() === 'dark'),
       });
     });
@@ -68,6 +70,7 @@ export class SettingsComponent {
       companyLogo: '',
       canPrice: Number(value.canPrice),
       depositAmount: Number(value.depositAmount),
+      lowStockThreshold: Number(value.lowStockThreshold),
       theme: value.darkMode ? 'dark' : 'light',
       darkMode: !!value.darkMode,
       backupDate: new Date().toISOString(),

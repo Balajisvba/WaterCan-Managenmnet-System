@@ -12,6 +12,7 @@ import { ExcelService } from '../../../services/excel.service';
 import { NotificationService } from '../../../services/notification.service';
 import { BusinessStateService } from '../../../services/business-state.service';
 import { GoogleSheetService } from '../../../services/google-sheet.service';
+import { RoleService } from '../../../services/role.service';
 
 @Component({
   selector: 'app-layout-shell',
@@ -38,6 +39,7 @@ export class LayoutShellComponent implements OnDestroy {
   private readonly notification = inject(NotificationService);
   private readonly businessState = inject(BusinessStateService);
   private readonly googleSheetService = inject(GoogleSheetService);
+  private readonly roleService = inject(RoleService);
 
   readonly isDarkMode = computed(() => this.themeService.theme() === 'dark');
   readonly sidenavOpen = signal(true);
@@ -46,23 +48,28 @@ export class LayoutShellComponent implements OnDestroy {
   readonly showBackdrop = computed(() => this.isMobile());
   readonly isSyncing = this.businessState.isSyncing;
   readonly isOnline = this.googleSheetService.isOnline;
-  readonly navigation = [
-    { label: 'Dashboard', icon: 'dashboard', route: '/dashboard' },
-    { label: 'Customers', icon: 'people', route: '/customers' },
-    { label: 'Deliveries', icon: 'local_shipping', route: '/deliveries' },
-    { label: 'Expenses', icon: 'receipt_long', route: '/expenses' },
-    { label: 'Payments', icon: 'payments', route: '/payments' },
-    { label: 'Missing Cans', icon: 'inventory_2', route: '/missing-cans' },
-    { label: 'Monthly Reports', icon: 'description', route: '/monthly-delivery-reports' },
-    { label: 'Reports', icon: 'analytics', route: '/reports' },
-    { label: 'Settings', icon: 'settings', route: '/settings' },
+  readonly currentRole = this.roleService.role;
+  private readonly allNavigation = [
+    { label: 'Dashboard', icon: 'dashboard', route: '/dashboard', roles: ['Admin', 'Driver'] },
+    { label: 'Customers', icon: 'people', route: '/customers', roles: ['Admin'] },
+    { label: 'Drivers', icon: 'badge', route: '/drivers', roles: ['Admin'] },
+    { label: 'Deliveries', icon: 'local_shipping', route: '/deliveries', roles: ['Admin'] },
+    { label: 'Inventory', icon: 'inventory_2', route: '/inventory', roles: ['Admin'] },
+    { label: 'Expenses', icon: 'receipt_long', route: '/expenses', roles: ['Admin'] },
+    { label: 'Payments', icon: 'payments', route: '/payments', roles: ['Admin'] },
+    { label: 'Missing Cans', icon: 'inventory_2', route: '/missing-cans', roles: ['Admin'] },
+    { label: 'Monthly Reports', icon: 'description', route: '/monthly-delivery-reports', roles: ['Admin'] },
+    { label: 'Reports', icon: 'analytics', route: '/reports', roles: ['Admin'] },
+    { label: 'Settings', icon: 'settings', route: '/settings', roles: ['Admin'] },
   ];
+  readonly navigation = computed(() => this.allNavigation.filter((item) => this.roleService.canAccess(item.roles as Array<'Admin' | 'Driver'>)));
 
   constructor() {
     if (typeof window !== 'undefined') {
       this.updateViewport();
       window.addEventListener('resize', this.handleResize);
     }
+    void this.roleService.refresh();
     void this.businessState.refresh().catch(() => undefined);
   }
 

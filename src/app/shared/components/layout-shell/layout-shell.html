@@ -9,7 +9,7 @@
     </div>
 
     <mat-nav-list class="nav-list">
-      @for (item of navigation; track item.route) {
+      @for (item of navigation(); track item.route) {
         <a mat-list-item [routerLink]="item.route" routerLinkActive="active-link" class="nav-item" (click)="onNavItemClick()">
           <mat-icon matListItemIcon class="nav-icon">{{ item.icon }}</mat-icon>
           <span matListItemTitle class="nav-text">{{ item.label }}</span>
@@ -35,6 +35,7 @@
       <div class="toolbar-brand">
         <img src="/aqua-logo.png" alt="Logo" class="header-logo-mini" />
         <span class="toolbar-title">Dhanam Agencies Operations</span>
+        @if (currentRole()) { <span class="toolbar-role">{{ currentRole() }}</span> }
       </div>
 
       <span class="toolbar-spacer"></span>

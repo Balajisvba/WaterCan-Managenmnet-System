@@ -167,5 +167,6 @@ export function buildSeedSettings(): Settings {
     theme: 'light',
     darkMode: false,
     backupDate: new Date().toISOString(),
+    lowStockThreshold: 15,
   };
 }

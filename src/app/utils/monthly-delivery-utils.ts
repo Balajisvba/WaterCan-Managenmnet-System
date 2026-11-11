@@ -28,14 +28,14 @@ export function formatMonthLabel(monthKey: string): string {
 
 export function deliveriesForMonth(deliveries: Delivery[], monthKey: string): Delivery[] {
   return deliveries
-    .filter((delivery) => toDateKey(delivery.deliveryDate).startsWith(monthKey))
+    .filter((delivery) => delivery.status === 'Delivered' && toDateKey(delivery.deliveryDate).startsWith(monthKey))
     .sort((first, second) =>
       toDateKey(first.deliveryDate).localeCompare(toDateKey(second.deliveryDate)),
     );
 }
 
 export function summarizeDeliveries(deliveries: Delivery[]): MonthlyDeliverySummary {
-  return deliveries.reduce<MonthlyDeliverySummary>(
+  return deliveries.filter((delivery) => delivery.status === 'Delivered').reduce<MonthlyDeliverySummary>(
     (summary, delivery) => ({
       deliveryCount: summary.deliveryCount + 1,
       filledCans: summary.filledCans + (Number(delivery.filledCans) || 0),

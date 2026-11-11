@@ -103,7 +103,7 @@ export class CustomerService {
       alternateMobile,
       address: requireText(value.address, 'Address'),
       area: requireText(value.area, 'Area'),
-      depositAmount: requireNonNegativeNumber(value.depositAmount, 'Deposit amount'),
+      depositAmount: value.depositAmount == null ? 0 : requireNonNegativeNumber(value.depositAmount, 'Deposit amount'),
       openingOutstandingCans: requireNonNegativeNumber(
         value.openingOutstandingCans ?? value.outstandingCan,
         'Initial outstanding cans',

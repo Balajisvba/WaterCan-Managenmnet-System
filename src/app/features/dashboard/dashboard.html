@@ -1,4 +1,15 @@
 <div class="dashboard-container">
+  @if (isDriver()) {
+    <div class="driver-workspace">
+      <div class="hero-card">
+        <div class="hero-text"><h2>Driver Operations</h2><p>Create customer orders and confirm deliveries from this dashboard.</p></div>
+        <div class="hero-actions"><button mat-flat-button color="primary" (click)="openNewDelivery()"><mat-icon>add_shopping_cart</mat-icon> Order Cans</button></div>
+      </div>
+      <section class="driver-orders"><div class="section-header"><div><h3>Pending Orders</h3><p>Select an order to enter the actual delivered quantity, payment mode, and driver.</p></div><span class="driver-count">{{ pendingOrders().length }} pending</span></div>
+        <div class="driver-order-table"><table><thead><tr><th>Customer</th><th>Ordered Cans</th><th>Order Date</th><th>Action</th></tr></thead><tbody>@for (order of pendingOrders(); track order.id) {<tr><td>{{ order.customerName }}</td><td>{{ order.orderedCans || order.filledCans }}</td><td>{{ order.orderDate || order.deliveryDate }}</td><td><button mat-flat-button color="primary" (click)="openPendingDelivery(order)"><mat-icon>local_shipping</mat-icon> Confirm Delivery</button></td></tr>} @empty {<tr><td colspan="4" class="empty-driver-orders">No pending orders.</td></tr>}</tbody></table></div>
+      </section>
+    </div>
+  } @else {
   <!-- Hero banner -->
   <div class="hero-card">
     <div class="hero-text">
@@ -26,6 +37,11 @@
       </button>
     </div>
   </div>
+
+  <section class="admin-settlements">
+    <div class="section-header"><div><h3>Driver Cash Settlements</h3><p>Cash handed over to the shop owner through driver logout.</p></div><span class="settlement-total">Total: ₹{{ totalDriverSettlements() | number:'1.0-2' }}</span></div>
+    <div class="driver-order-table"><table><thead><tr><th>Driver</th><th>Settlement Date</th><th>Amount</th></tr></thead><tbody>@for (settlement of driverSettlements(); track settlement.id) {<tr><td>{{ settlement.driverName }}</td><td>{{ settlement.settlementDate }}</td><td>₹{{ settlement.amount | number:'1.0-2' }}</td></tr>} @empty {<tr><td colspan="3" class="empty-driver-orders">No driver cash settlements recorded.</td></tr>}</tbody></table></div>
+  </section>
 
   <!-- Single Date Calendar Filter Toolbar -->
   <div class="filter-toolbar">
@@ -146,6 +162,12 @@
     ></app-card>
   </div>
 
+  <section class="dashboard-inventory">
+    <div class="section-header"><div><h3>Inventory Overview</h3><p>Current shop stock and this month's movements.</p></div><a mat-button color="primary" routerLink="/inventory">Open Inventory</a></div>
+    @if (inventoryLowStock()) { <div class="low-stock-alert"><mat-icon>warning</mat-icon> Low Stock Alert: Only {{ availableStock() }} cans available.</div> }
+    <div class="inventory-summary"><div><span>Available Stock</span><strong>{{ availableStock() }}</strong></div><div><span>Received This Month</span><strong>{{ inventoryMonthStats().received }}</strong></div><div><span>Delivered This Month</span><strong>{{ inventoryMonthStats().delivered }}</strong></div><div><span>Returned This Month</span><strong>{{ inventoryMonthStats().returned }}</strong></div></div>
+  </section>
+
   <!-- 4 Trend Charts -->
   <div class="charts-grid">
     <app-chart
@@ -193,4 +215,5 @@
       (printRow)="printInvoice($event)"
     ></app-data-table>
   </div>
+  }
 </div>

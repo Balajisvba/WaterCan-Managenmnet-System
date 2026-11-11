@@ -29,6 +29,11 @@
             <input matInput type="number" formControlName="depositAmount" min="0" />
           </mat-form-field>
 
+          <mat-form-field appearance="outline">
+            <mat-label>Low Stock Threshold (Cans)</mat-label>
+            <input matInput type="number" formControlName="lowStockThreshold" min="0" step="1" />
+          </mat-form-field>
+
           <div class="toggle-row">
             <mat-slide-toggle formControlName="darkMode" color="primary">
               Enable Dark Mode Theme

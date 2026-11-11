@@ -297,6 +297,8 @@ export interface MonthlyBillDialogData {
       font-weight: 700;
     }
     .text-right { text-align: right; }
+    .info-box.text-right p:nth-of-type(4), .info-box.text-right p:nth-of-type(5) { display: none; }
+    .grand-total span:nth-of-type(n+2), .grand-total strong:nth-of-type(n+2) { display: none; }
     .text-center { text-align: center; }
 
     .table-section {
@@ -425,8 +427,8 @@ export class MonthlyBillDialogComponent {
     const monthStr = this.selectedMonth();
     if (!custId || !monthStr) return [];
 
-    return this.stateService.deliveries().filter((d) => {
-      return d.customerId === custId && d.deliveryDate && d.deliveryDate.startsWith(monthStr);
+      return this.stateService.deliveries().filter((d) => {
+      return d.status === 'Delivered' && d.customerId === custId && d.deliveryDate && d.deliveryDate.startsWith(monthStr);
     });
   });
 

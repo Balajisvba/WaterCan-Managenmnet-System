@@ -10,7 +10,6 @@ import { BusinessStateService } from '../../services/business-state.service';
 import { DeliveryService } from '../../services/delivery.service';
 import { ExcelService } from '../../services/excel.service';
 import { NotificationService } from '../../services/notification.service';
-import { SearchBoxComponent } from '../../shared/components/search-box/search-box';
 import { DataTableComponent, TableColumn } from '../../shared/components/data-table/data-table';
 import { DeliveryDialogComponent } from '../../shared/components/dialogs/delivery-dialog';
 import { InvoiceDialogComponent } from '../../shared/components/dialogs/invoice-dialog';
@@ -18,6 +17,7 @@ import { MonthlyBillDialogComponent } from '../../shared/components/dialogs/mont
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog';
 import { Delivery } from '../../models/app.models';
 import { isDateInRange, toLocalDateInputValue } from '../../utils/date-utils';
+import { RoleService } from '../../services/role.service';
 
 @Component({
   selector: 'app-deliveries',
@@ -30,7 +30,6 @@ import { isDateInRange, toLocalDateInputValue } from '../../utils/date-utils';
     MatFormFieldModule,
     MatInputModule,
     MatDialogModule,
-    SearchBoxComponent,
     DataTableComponent,
   ],
   templateUrl: './deliveries.html',
@@ -42,6 +41,7 @@ export class DeliveriesComponent {
   private readonly excelService = inject(ExcelService);
   private readonly dialog = inject(MatDialog);
   private readonly notification = inject(NotificationService);
+  readonly isAdmin = inject(RoleService).isAdmin;
 
   readonly searchTerm = signal<string>('');
   readonly datePreset = signal<'all' | 'today' | 'week' | 'month' | 'custom'>('all');
@@ -53,6 +53,8 @@ export class DeliveriesComponent {
   });
 
   readonly deliveries = this.deliveryService.deliveries;
+  readonly pendingOrders = computed(() => this.deliveries().filter((delivery) => delivery.status === 'Pending'));
+  readonly completedDeliveries = computed(() => this.deliveries().filter((delivery) => delivery.status === 'Delivered'));
 
   setPreset(preset: 'all' | 'today' | 'week' | 'month'): void {
     this.datePreset.set(preset);
@@ -123,19 +125,41 @@ export class DeliveriesComponent {
   ];
 
   openAddDialog(): void {
+    this.openAddOrderDialog();
+  }
+
+  openAddOrderDialog(): void {
     const dialogRef = this.dialog.open(DeliveryDialogComponent, {
       width: '600px',
-      data: { customers: this.stateService.customers() },
+      data: { customers: this.stateService.customers(), mode: 'order' },
     });
     dialogRef.afterClosed().subscribe(async (result) => {
       if (result) {
         try {
           await this.deliveryService.add(result);
-          this.notification.success('Delivery log recorded');
+          this.notification.success('Order added');
         } catch (err) {
           this.notification.error('Failed to log delivery');
         }
       }
+    });
+  }
+
+  openDeliveryDialog(order: Delivery): void {
+    const dialogRef = this.dialog.open(DeliveryDialogComponent, { width: '600px', data: { delivery: order, customers: this.stateService.customers(), drivers: this.stateService.drivers().filter((driver) => driver.status === 'Active'), mode: 'delivery' } });
+    dialogRef.afterClosed().subscribe(async (result) => {
+      if (!result) return;
+      try { await this.deliveryService.update(result); this.notification.success('Delivery confirmed'); }
+      catch { this.notification.error('Failed to confirm delivery'); }
+    });
+  }
+
+  cancelOrder(order: Delivery): void {
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, { width: '400px', data: { title: 'Cancel Order', message: `Cancel order ${order.id} for ${order.customerName}?` } });
+    dialogRef.afterClosed().subscribe(async (confirmed) => {
+      if (!confirmed) return;
+      try { await this.deliveryService.update({ ...order, status: 'Cancelled' }); this.notification.success('Order cancelled'); }
+      catch { this.notification.error('Failed to cancel order'); }
     });
   }
 
@@ -145,12 +169,13 @@ export class DeliveriesComponent {
       data: {
         delivery,
         customers: this.stateService.customers(),
+        drivers: this.stateService.drivers().filter((driver) => driver.status === 'Active'),
       },
     });
     dialogRef.afterClosed().subscribe(async (result) => {
       if (result) {
         try {
-          await this.deliveryService.update(result);
+          await this.deliveryService.update({ ...result, status: result.status || delivery.status });
           this.notification.success('Delivery record updated');
         } catch (err) {
           this.notification.error('Failed to update delivery');
@@ -206,7 +231,7 @@ export class DeliveriesComponent {
   }
 
   exportExcel(): void {
-    this.excelService.exportToCsv(this.deliveries(), 'aqua-deliveries');
+    this.excelService.exportToCsv(this.completedDeliveries(), 'aqua-deliveries');
     this.notification.success('Deliveries exported');
   }
 }
