@@ -19,9 +19,10 @@
 
     <div class="sidenav-footer">
       <div class="badge-status">
-        <span class="status-dot"></span> Offline Enterprise Active
+        <span class="status-dot" [class.offline]="!isOnline()"></span>
+        {{ isSyncing() ? 'Synchronizing shared data' : isOnline() ? 'Shared data connected' : 'Shared data unavailable' }}
       </div>
-      <p>Dhanam Agencies v2.0</p>
+      <p>Dhanam Agencies, Sethiyathope</p>
     </div>
   </mat-sidenav>
 
@@ -59,7 +60,7 @@
     </main>
 
     <footer class="app-footer">
-      <p>&copy; 2026 Dhanam Agencies Water Can Supply Management System. Powered by Angular 20 & ExcelJS Engine.</p>
+      <p>&copy; 2026 Dhanam Agencies, Sethiyathope · Water Can Management System</p>
     </footer>
   </mat-sidenav-content>
 </mat-sidenav-container>

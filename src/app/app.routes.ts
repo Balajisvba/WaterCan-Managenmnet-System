@@ -1,10 +1,16 @@
 import { Routes } from '@angular/router';
 import { LayoutShellComponent } from './shared/components/layout-shell/layout-shell';
+import { authGuard } from './core/auth.guard';
 
 export const routes: Routes = [
   {
+    path: 'login',
+    loadComponent: () => import('./features/auth/login/login').then((m) => m.LoginComponent),
+  },
+  {
     path: '',
     component: LayoutShellComponent,
+    canActivate: [authGuard],
     children: [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
       {
@@ -36,10 +42,14 @@ export const routes: Routes = [
         loadComponent: () => import('./features/reports/reports').then((m) => m.ReportsComponent),
       },
       {
+        path: 'monthly-delivery-reports',
+        loadComponent: () => import('./features/monthly-delivery-reports/monthly-delivery-reports').then((m) => m.MonthlyDeliveryReportsComponent),
+      },
+      {
         path: 'settings',
         loadComponent: () => import('./features/settings/settings').then((m) => m.SettingsComponent),
       },
     ],
   },
-  { path: '**', redirectTo: 'dashboard' },
+  { path: '**', redirectTo: '' },
 ];

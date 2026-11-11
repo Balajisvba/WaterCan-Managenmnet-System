@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { deriveCustomerStatus } from './services/business-state.service';
 import { isDateInRange, toLocalDateInputValue } from './utils/date-utils';
-import { buildSeedCustomers, buildSeedDeliveries, buildSeedExpenses, generateId } from './utils/sample-data';
+import { buildSeedCustomers, buildSeedDeliveries, buildSeedExpenses, generateId, generateSequentialId } from './utils/sample-data';
 
 describe('Dhanam Agencies Business Logic & Data Models', () => {
   it('should generate unique entity IDs with correct prefixes', () => {
@@ -11,6 +11,13 @@ describe('Dhanam Agencies Business Logic & Data Models', () => {
     expect(customerId).toContain('C-');
     expect(deliveryId).toContain('D-');
     expect(customerId).not.toEqual(deliveryId);
+  });
+
+  it('should generate sequential prefixed IDs using three digits', () => {
+    const ids = ['C-001', 'C-002', 'C-005'];
+    const nextId = generateSequentialId('C', ids);
+
+    expect(nextId).toBe('C-006');
   });
 
   it('should build seed customer data with valid defaults', () => {

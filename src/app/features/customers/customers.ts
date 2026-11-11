@@ -51,7 +51,7 @@ export class CustomersComponent {
   });
 
   readonly totalPendingAmount = computed(() => {
-    return this.filteredCustomers().reduce((sum, c) => sum + (c.pendingAmount || 0), 0);
+    return this.filteredCustomers().reduce((sum, c) => sum + ((c.balanceDue ?? c.pendingAmount) || 0), 0);
   });
 
   readonly columns: TableColumn[] = [
@@ -63,6 +63,7 @@ export class CustomersComponent {
     { key: 'outstandingCan', label: 'Outstanding Cans', type: 'number' },
     { key: 'totalDelivered', label: 'Total Delivered', type: 'number' },
     { key: 'totalReturned', label: 'Total Returned', type: 'number' },
+    { key: 'balanceDue', label: 'Balance Due', type: 'currency' },
     { key: 'pendingAmount', label: 'Pending Amount', type: 'currency' },
     { key: 'status', label: 'Status', type: 'status' },
     { key: 'actions', label: 'Actions', type: 'actions' },
@@ -70,10 +71,14 @@ export class CustomersComponent {
 
   openAddDialog(): void {
     const dialogRef = this.dialog.open(CustomerDialogComponent, { width: '600px' });
-    dialogRef.afterClosed().subscribe((result) => {
+    dialogRef.afterClosed().subscribe(async (result) => {
       if (result) {
-        this.customerService.add(result);
-        this.notification.success('Customer registered successfully');
+        try {
+          await this.customerService.add(result);
+          this.notification.success('Customer registered successfully');
+        } catch {
+          this.notification.error('Failed to register customer');
+        }
       }
     });
   }
@@ -83,10 +88,14 @@ export class CustomersComponent {
       width: '600px',
       data: customer,
     });
-    dialogRef.afterClosed().subscribe((result) => {
+    dialogRef.afterClosed().subscribe(async (result) => {
       if (result) {
-        this.customerService.update(result);
-        this.notification.success('Customer updated successfully');
+        try {
+          await this.customerService.update(result);
+          this.notification.success('Customer updated successfully');
+        } catch {
+          this.notification.error('Failed to update customer');
+        }
       }
     });
   }
@@ -99,10 +108,14 @@ export class CustomersComponent {
         message: `Are you sure you want to delete ${customer.name}? All transaction logs will remain saved.`,
       },
     });
-    dialogRef.afterClosed().subscribe((confirmed) => {
+    dialogRef.afterClosed().subscribe(async (confirmed) => {
       if (confirmed) {
-        this.customerService.remove(customer.id);
-        this.notification.success('Customer deleted successfully');
+        try {
+          await this.customerService.remove(customer.id);
+          this.notification.success('Customer deleted successfully');
+        } catch {
+          this.notification.error('Failed to delete customer');
+        }
       }
     });
   }

@@ -7,6 +7,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { Expense } from '../../../models/app.models';
+import { toLocalDateInputValue } from '../../../utils/date-utils';
 
 @Component({
   selector: 'app-expense-dialog',
@@ -75,7 +76,7 @@ export class ExpenseDialogComponent {
   readonly form: FormGroup = this.fb.group({
     category: [this.data?.category || 'Fuel', Validators.required],
     amount: [this.data?.amount ?? 0, [Validators.required, Validators.min(1)]],
-    date: [this.data?.date ? this.data.date.split('T')[0] : new Date().toISOString().split('T')[0], Validators.required],
+    date: [this.data?.date ? this.data.date.split('T')[0] : toLocalDateInputValue(new Date()), Validators.required],
     remarks: [this.data?.remarks || ''],
   });
 
